@@ -48,7 +48,7 @@ Replace the `dependencies` and `devDependencies` blocks so they read exactly:
     "next": "^15.3.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
-    "next-auth": "^5.0.0",
+    "next-auth": "beta",
     "@sanity/client": "^6.22.0",
     "next-sanity": "^9.4.0"
   },
