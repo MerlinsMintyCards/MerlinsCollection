@@ -25,9 +25,17 @@ If a spec exists, note its invariants, decisions, and testing strategy.
 
 **Ask before writing tests** when missing information would materially change behavior, scope, safety, contracts, data shape, or verification. If the task is clear enough to proceed with a reasonable assumption, make it explicit and keep moving.
 
-### 2. Red
+### 2. Adversarial Agent Review Pre-Changes
 
-Write the smallest failing test that proves the desired behavior or reproduces the bug.
+Run an adversarial subagent to review the design doc with a fresh perspective and identify potential issues or improvements.
+
+- Look for potential edge cases, error conditions, or design flaws
+- Suggest improvements to the implementation plan
+- Provide alternative approaches or solutions
+
+### 3. Red
+
+Consider the suggestions from the adversarial agent and write the smallest failing test that proves the desired behavior or reproduces the bug.
 
 - Name the test after the behavior, not the implementation
 - Test one thing
@@ -35,7 +43,7 @@ Write the smallest failing test that proves the desired behavior or reproduces t
 
 Do not write any implementation code yet.
 
-### 3. Green
+### 4. Green
 
 Write the minimum implementation needed to pass the test.
 
@@ -44,9 +52,17 @@ Write the minimum implementation needed to pass the test.
 - Add failure-path tests where they matter (invalid input, missing dependencies, error states)
 - Run all tests to confirm the new one passes and nothing else breaks
 
-### 4. Refine
+### 5. Adversarial Agent Review Post-Changes
 
-Simplify code and tests while they stay green.
+Run an adversarial subagent to review the implementation with a fresh perspective and identify potential issues or improvements.
+
+- Look for potential edge cases, error conditions, or design flaws
+- Suggest improvements to the implementation plan
+- Provide alternative approaches or solutions
+
+### 6. Refine
+
+Consider the suggestions from the adversarial agent and refine the implementation. Simplify code and tests while they stay green.
 
 - Remove duplication
 - Improve names
@@ -57,6 +73,7 @@ Simplify code and tests while they stay green.
 
 ## Rules
 
+- Follow steps 1-6 in order. Do not skip any steps.
 - Do not write implementation code before a failing test for the behavior.
 - Tests describe behavior, not implementation details. Avoid testing private internals.
 - Prefer real boundaries over mocks when practical — mocks that don't match production behavior create false confidence.
