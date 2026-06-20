@@ -1,3 +1,60 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  --forest: #1f6e32;
+  --forest-deep: #103b1c;
+  --forest-mid: #2d8f44;
+  --mint: #a9e0b3;
+  --mint-soft: #d4f0d9;
+  --cream: #f5f0e8;
+  --paper: #fffdf8;
+  --ink: #241f1b;
+  --muted: #6f6457;
+  --line: #e6ddcc;
+}
+
+body {
+  background: var(--cream);
+  color: var(--ink);
+}
+
+/* ---- FlipCard: 3D flip with anti-shake (hover binds to the stable wrapper) ---- */
+.flip-stage {
+  perspective: 1500px;
+  width: min(262px, 72vw);
+  height: calc(min(262px, 72vw) * 1.4);
+  cursor: pointer;
+}
+.flip-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.flip-inner.is-flipped {
+  transform: rotateY(180deg);
+}
+@media (hover: hover) and (pointer: fine) {
+  .flip-stage:hover .flip-inner {
+    transform: rotateY(180deg);
+  }
+}
+.flip-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 22px 44px rgba(16, 59, 28, 0.3);
+}
+.flip-back {
+  transform: rotateY(180deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .flip-inner {
+    transition: none;
+  }
+}
