@@ -1,12 +1,12 @@
 import Container from '@/components/ui/Container'
-import { Search, Tag, User, MapPin } from 'lucide-react'
+import { Award, Tag, Users, MapPin } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
 const items: { Icon: LucideIcon; title: string; sub: string }[] = [
-  { Icon: Search, title: 'Honest grading', sub: 'Accurate, no surprises — PSA-referenced.' },
-  { Icon: Tag, title: 'Fair pricing', sub: 'Priced to the real market.' },
-  { Icon: User, title: 'Collector-run', sub: 'A real person who loves the hobby.' },
-  { Icon: MapPin, title: 'At the shows', sub: 'Meet us in person.' },
+  { Icon: Award, title: 'Raw & graded', sub: 'Loose singles to PSA, BGS, and CGC slabs.' },
+  { Icon: Tag, title: 'Fair prices', sub: 'Set off real recent sales, not wishlist numbers.' },
+  { Icon: Users, title: 'We collect too', sub: 'Just college kids who never quit Pokémon.' },
+  { Icon: MapPin, title: 'At the shows', sub: 'Come find our table and say hi.' },
 ]
 
 export default function TrustStrip() {

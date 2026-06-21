@@ -29,7 +29,7 @@ export default function Navbar() {
     <header className="sticky top-0 z-40 bg-cream/90 backdrop-blur border-b border-line">
       <Container>
         <nav className="relative flex items-center gap-4 h-[66px]">
-          <Link href="/" className="flex items-center gap-2.5 shrink-0">
+          <Link href="/" className="flex items-center gap-2.5 min-w-0">
             <Image
               src="/images/logo/cat-logo.png"
               alt="Merlin's Minty Cards"
@@ -37,7 +37,7 @@ export default function Navbar() {
               height={32}
               className="rounded-full shrink-0"
             />
-            <span className="font-serif font-semibold text-[16px] nav:text-[19px] text-forest-deep whitespace-nowrap">
+            <span className="font-serif font-semibold text-[16px] nav:text-[19px] text-forest-deep whitespace-nowrap truncate">
               Merlin&apos;s Minty Cards
             </span>
           </Link>
@@ -59,11 +59,20 @@ export default function Navbar() {
                 </Link>
               </li>
             ))}
+            <li className="nav:hidden px-7 pt-1 pb-2">
+              <Link
+                href="/inventory"
+                onClick={() => setOpen(false)}
+                className="block rounded-full bg-forest text-white text-center font-semibold text-[15px] px-5 py-3 shadow-[0_8px_20px_rgba(31,110,50,0.25)] active:translate-y-px"
+              >
+                Inventory
+              </Link>
+            </li>
           </ul>
 
           <span className="flex-1" />
 
-          <Button href="/inventory" className="px-4 nav:px-5 py-2.5 text-[13px] nav:text-sm">
+          <Button href="/inventory" className="hidden nav:inline-block px-5 py-2.5 text-sm">
             Inventory
           </Button>
 
@@ -73,9 +82,9 @@ export default function Navbar() {
             aria-expanded={open}
             aria-controls="primary-menu"
             onClick={() => setOpen((o) => !o)}
-            className="nav:hidden flex items-center justify-center w-10 h-10 rounded-[10px] border-[1.5px] border-line text-forest-deep"
+            className="nav:hidden flex shrink-0 items-center justify-center w-10 h-10 rounded-[10px] border-[1.5px] border-line text-forest-deep"
           >
-            <Menu size={18} />
+            <Menu size={20} />
           </button>
         </nav>
       </Container>

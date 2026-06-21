@@ -6,17 +6,17 @@ const cards: { badge: string; title: string; body: string }[] = [
   {
     badge: 'Buy',
     title: 'Find your next card',
-    body: 'Browse a curated, fairly-priced inventory — beginner singles to graded vintage.',
+    body: 'Dig through our boxes — cheap singles up to graded slabs. If you collect it, chances are we have some.',
   },
   {
     badge: 'Sell',
     title: 'Cash in your collection',
-    body: 'An honest valuation. No lowballs, no pressure — just a fair offer.',
+    body: "Bring your cards by the table and we'll give you a fair number based on what they actually sell for.",
   },
   {
     badge: 'Trade',
     title: 'Swap toward a grail',
-    body: "Bring what you've got and trade up toward the card you actually want.",
+    body: "Trade up, or sideways. Bring what you've got and we'll work something out.",
   },
 ]
 
@@ -26,8 +26,8 @@ export default function BuySellTrade() {
       <Container>
         <SectionHeading
           eyebrow="What we do"
-          title="Three ways to work with us."
-          subtitle="Whether you're starting out, cashing in, or hunting a grail, there's a friendly way in."
+          title="Three reasons to stop by our table."
+          subtitle="Whether you're buying your first card or moving a whole collection, come say hi."
         />
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
           {cards.map((c) => (

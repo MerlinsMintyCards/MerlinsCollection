@@ -20,9 +20,12 @@ describe('Navbar', () => {
     expect(screen.getByRole('link', { name: 'Articles' })).toHaveAttribute('href', '/articles')
   })
 
-  it('renders the Inventory CTA pointing to /inventory', () => {
+  it('renders Inventory CTAs pointing to /inventory', () => {
     render(<Navbar />)
-    expect(screen.getByRole('link', { name: 'Inventory' })).toHaveAttribute('href', '/inventory')
+    // One CTA lives in the desktop bar, one inside the mobile dropdown menu.
+    const inventoryLinks = screen.getAllByRole('link', { name: 'Inventory' })
+    expect(inventoryLinks.length).toBeGreaterThan(0)
+    inventoryLinks.forEach((link) => expect(link).toHaveAttribute('href', '/inventory'))
   })
 
   it('toggles the mobile menu open and closed', async () => {

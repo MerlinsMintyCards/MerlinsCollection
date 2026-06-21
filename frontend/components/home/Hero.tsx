@@ -1,7 +1,7 @@
+import Image from 'next/image'
 import Container from '@/components/ui/Container'
 import Button from '@/components/ui/Button'
 import Eyebrow from '@/components/ui/Eyebrow'
-import ImagePlaceholder from '@/components/ui/ImagePlaceholder'
 import FlipCard from '@/components/ui/FlipCard'
 
 export default function Hero() {
@@ -14,11 +14,12 @@ export default function Hero() {
             <h1 className="font-serif font-semibold text-forest-deep leading-[1.1] tracking-[-0.01em] text-[clamp(34px,6.4vw,54px)] my-4">
               Pokémon cards,
               <br />
-              handled with care.
+              and a cat named Merlin.
             </h1>
             <p className="text-muted text-[clamp(16px,2.4vw,19px)] max-w-[42ch] mb-7">
-              Merlin&apos;s Minty Cards is a collector-run shop built on 25 years in the hobby — fair
-              grading, honest pricing, and a friendly face at every card show.
+              We&apos;re a few college friends who never really grew out of Pokémon. You&apos;ll find
+              us set up at card shows around the area, buying, selling, and trading cards, raw and
+              graded, at fair prices. Merlin&apos;s our cat. He runs the logo, not much else.
             </p>
             <div className="flex flex-col sm:flex-row gap-3.5">
               <Button href="/about">Read our story</Button>
@@ -30,17 +31,24 @@ export default function Hero() {
 
           <div className="flex flex-col items-center order-first wide:order-none">
             <FlipCard
-              label="Lapras card — tap to flip"
+              label="Merlin the cat — tap to flip"
               front={
-                <ImagePlaceholder
-                  label="Front: real graded card photo (e.g. laprassouthern.webp)"
-                  className="w-full h-full"
+                <Image
+                  src="/images/cards/Merlin_card.webp"
+                  alt="Merlin the cat as a custom Pokémon-style card"
+                  fill
+                  sizes="(max-width: 900px) 72vw, 262px"
+                  className="object-cover"
+                  priority
                 />
               }
               back={
-                <ImagePlaceholder
-                  label="Card back: classic Pokémon back image"
-                  className="w-full h-full bg-gradient-to-br from-[#3457b0] to-[#1d2f6b]"
+                <Image
+                  src="/images/cards/pokemon_card_backside.webp"
+                  alt="Classic Pokémon card back"
+                  fill
+                  sizes="(max-width: 900px) 72vw, 262px"
+                  className="object-cover"
                 />
               }
             />

@@ -14,7 +14,7 @@ import BuySellTrade from '@/components/home/BuySellTrade'
 describe('mid Home sections', () => {
   it('TrustStrip renders all four trust items', () => {
     render(<TrustStrip />)
-    ;['Honest grading', 'Fair pricing', 'Collector-run', 'At the shows'].forEach((t) =>
+    ;['Raw & graded', 'Fair prices', 'We collect too', 'At the shows'].forEach((t) =>
       expect(screen.getByText(t)).toBeInTheDocument(),
     )
   })
@@ -22,7 +22,7 @@ describe('mid Home sections', () => {
   it('StoryTeaser renders the heading and link to About', () => {
     render(<StoryTeaser />)
     expect(
-      screen.getByRole('heading', { level: 2, name: 'It started with one binder.' }),
+      screen.getByRole('heading', { level: 2, name: 'A few friends, a lot of cards, and a cat.' }),
     ).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'More about Merlin' })).toHaveAttribute('href', '/about')
   })

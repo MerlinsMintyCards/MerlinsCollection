@@ -44,3 +44,22 @@ describe('bottom Home sections', () => {
     expect(screen.getByRole('link', { name: 'Get in touch' })).toHaveAttribute('href', '/about#contact')
   })
 })
+
+describe('FeaturedFinds collection cards', () => {
+  it('wires every card with the smooth hover-grow treatment', () => {
+    const { container } = render(<FeaturedFinds />)
+    const cards = container.querySelectorAll('.collection-card')
+    expect(cards).toHaveLength(5)
+    // the treatment lives on the wrapper that holds each card image
+    cards.forEach((card) => {
+      expect(card.querySelector('img')).toBeInTheDocument()
+    })
+  })
+
+  it('row container carries collection-row class so CSS :has() can shrink siblings on hover', () => {
+    const { container } = render(<FeaturedFinds />)
+    // The CSS rule `.collection-row:has(.collection-card:hover) .collection-card:not(:hover)`
+    // anchors on this class — if it is missing the sibling-shrink effect silently disappears.
+    expect(container.querySelector('.collection-row')).toBeInTheDocument()
+  })
+})

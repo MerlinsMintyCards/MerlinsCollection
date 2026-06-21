@@ -58,3 +58,34 @@ body {
     transition: none;
   }
 }
+
+/* ---- Featured collection cards: smooth grow on focus ---- */
+.collection-card {
+  /* Snappy follow for the mobile centre-focus effect (driven by JS transform). */
+  transition: transform 0.15s linear;
+  transform-origin: center;
+  will-change: transform;
+}
+/* Desktop: a softly eased grow on hover, gated to true hover/fine-pointer
+   devices so it never sticks on touch. */
+@media (hover: hover) and (pointer: fine) {
+  .collection-card {
+    transition:
+      transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
+      box-shadow 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  /* Hovering a card smoothly grows it; siblings stay put. */
+  .collection-card:hover {
+    transform: scale(1.07);
+    box-shadow: 0 22px 44px rgba(16, 59, 28, 0.3);
+    z-index: 10;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .collection-card {
+    transition: none;
+  }
+  .collection-card:hover {
+    transform: none;
+  }
+}

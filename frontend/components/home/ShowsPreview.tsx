@@ -9,7 +9,7 @@ export default function ShowsPreview() {
         <SectionHeading
           eyebrow="In person"
           title="Catch us at a card show."
-          subtitle="Half the fun is meeting collectors face to face. Here's where we'll be next."
+          subtitle="Card shows are our whole thing — it's where you'll actually meet us. Here's where we're headed next."
         />
         <div className="flex flex-wrap gap-5 items-center bg-cream border border-line rounded-2xl px-6 py-5">
           <div className="flex flex-col items-center justify-center w-[74px] h-[74px] rounded-[14px] bg-forest text-white shrink-0">
@@ -27,7 +27,7 @@ export default function ShowsPreview() {
           </Button>
         </div>
         <p className="text-[11px] text-[#9a8f7d] italic mt-3.5">
-          Placeholder show — real upcoming events come from the Shows page later.
+          Sample listing for now — we keep real dates on the Shows page.
         </p>
       </Container>
     </section>

@@ -12,8 +12,8 @@ export default function FinalCTA() {
             Let&apos;s find your card.
           </h2>
           <p className="text-[#3f5a45] max-w-[50ch] mx-auto mb-[22px]">
-            Tell us what you&apos;re chasing, or come say hi at the next show. We&apos;re always happy
-            to talk Pokémon.
+            Looking for a specific card, or want to sell one? Message us, or catch us at the next
+            show — we&apos;re always down to talk Pokémon.
           </p>
           <Button href="/about#contact">Get in touch</Button>
         </div>

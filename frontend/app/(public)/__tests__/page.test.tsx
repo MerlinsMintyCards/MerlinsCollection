@@ -12,14 +12,14 @@ import HomePage from '@/app/(public)/page'
 describe('Home page', () => {
   it('renders the hero headline', () => {
     render(<HomePage />)
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('handled with care')
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('and a cat named Merlin')
   })
 
   it('renders every major section heading', () => {
     render(<HomePage />)
     ;[
-      'It started with one binder.',
-      'Three ways to work with us.',
+      'A few friends, a lot of cards, and a cat.',
+      'Three reasons to stop by our table.',
       'A peek at the collection.',
       'Catch us at a card show.',
       'Start with the basics.',
