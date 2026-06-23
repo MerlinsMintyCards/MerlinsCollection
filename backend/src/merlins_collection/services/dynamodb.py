@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import hashlib
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from enum import Enum
 
@@ -11,6 +11,11 @@ from boto3.dynamodb.conditions import Key
 from merlins_collection.models.catalog import CatalogCard
 
 INVENTORY_SHARD_COUNT = 10
+
+
+def _grade_key(grade) -> str:
+    # Canonical string for a grade in a key: trailing zeros stripped, plain (non-exponent) notation.
+    return f"{Decimal(str(grade)).normalize():f}"
 
 
 def _bucket(card_id: str) -> int:
@@ -112,19 +117,19 @@ class InventoryRepository:
         self._table.put_item(
             Item={
                 "PK": f"CARD#{card_id}",
-                "SK": f"GRADEDPRICE#{company}#{grade}",
+                "SK": f"GRADEDPRICE#{company}#{_grade_key(grade)}",
                 "entity": "graded_price",
                 "card_id": card_id,
                 "company": _serialize(company),
                 "grade": grade,
                 "market_value": value,
                 "source": "manual",
-                "updated_at": datetime.utcnow().isoformat(),
+                "updated_at": datetime.now(tz=timezone.utc).isoformat(),
             }
         )
 
     def get_graded_market_value(self, card_id, company, grade):
         item = self._table.get_item(
-            Key={"PK": f"CARD#{card_id}", "SK": f"GRADEDPRICE#{company}#{grade}"}
+            Key={"PK": f"CARD#{card_id}", "SK": f"GRADEDPRICE#{company}#{_grade_key(grade)}"}
         ).get("Item")
         return item["market_value"] if item else None

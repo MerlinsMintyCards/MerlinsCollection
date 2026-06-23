@@ -44,6 +44,14 @@ def test_graded_price_set_and_get(dynamo_repo):
     assert dynamo_repo.get_graded_market_value("swsh1-1", GradingCompany.PSA, Decimal("10")) == Decimal("500")
 
 
+def test_graded_price_grade_key_is_normalized(dynamo_repo):
+    from merlins_collection.models.inventory import GradingCompany
+
+    dynamo_repo.set_graded_market_value("swsh1-1", GradingCompany.BGS, Decimal("9.5"), Decimal("100"))
+    # A differently-spelled-but-equal grade must resolve to the same key.
+    assert dynamo_repo.get_graded_market_value("swsh1-1", GradingCompany.BGS, Decimal("9.50")) == Decimal("100")
+
+
 def test_catalog_upsert_does_not_clobber_graded_price(dynamo_repo):
     from merlins_collection.models.inventory import GradingCompany
 
