@@ -41,7 +41,7 @@ At the start of this work the entire backend is empty placeholders: bare `FastAP
 
 1. **Source of truth:** PokemonTCG.io API for the full catalog of all Pokémon cards *and* bundled TCGplayer (USD) market prices. (Chosen over TCGplayer-direct API and manual/CSV import for free, comprehensive coverage in one source.)
 2. **Two datasets:** a **catalog** (all cards + market prices, mirrored into DynamoDB) and **company inventory** (the subset Merlin owns). Mirroring the full catalog (~20k cards) was chosen over inventory-only + live lookups, to keep all query paths inside DynamoDB and match the "DB contains all Pokémon cards" intent.
-3. **Scale:** company inventory is in the **hundreds** (< ~1,000). This permits "list + filter in memory" for inventory search — no per-attribute indexes needed. Catalog is ~20k and synced in bulk via paged set queries.
+3. **Scale:** company inventory is **1,000+ and growing** (plan for tens of thousands). Inventory is therefore **sharded** across partitions, every list operation **paginates** (DynamoDB returns ≤ 1 MB per `Query` page), and faceted filter search narrows by key then filters in memory over a **cached snapshot** — the caching itself lives in the consumer slices, not the data-model layer. Catalog is ~20k and synced in bulk via paged set queries.
 4. **Single table** named `merlins-cards` (matches existing config), entity-prefixed keys, one GSI (set browsing + inventory-by-card).
 5. **Refresh cadence:** daily. Each run appends one dated price point per card, so **price history accumulates from day one** (PokemonTCG.io only exposes a current snapshot; history must be captured by us or it's lost).
 6. **Finish/printing is tracked.** TCGplayer prices are per finish (`normal`, `holofoil`, `reverseHolofoil`, `1stEditionHolofoil`, …). The catalog card stores the price map for all finishes; raw inventory records which finish it is, so the correct market price drives valuation/profit.
@@ -57,15 +57,19 @@ At the start of this work the entire backend is empty placeholders: bare `FastAP
 
 Graded market value is modeled **per `(card, company, grade)`** (a PSA 10 of a card is worth the same regardless of how many you own), so manual graded values live at the card level alongside raw per-finish prices. Each graded slab is just an ownership record (cost basis, listed price, cert #).
 
-`current_market_value` is **denormalized onto each inventory item** and refreshed by the daily sync. This lets valuation / summary / filter-search run as a *single partition query* with no per-card lookups — the core "structured to optimize queries" win. Freshness is bounded by the daily sync, which is acceptable because prices themselves update daily.
+**Inventory is sharded** to scale past the single-partition throughput cap and to keep "list all" parallelizable: the partition key is `INV#<bucket>` where `bucket = hash(card_id) % N` and `N = 10` (`INVENTORY_SHARD_COUNT`, fixed at design time — choose with headroom). To read/write/delete a specific item the shard is computed from its `card_id` (always known). "List all inventory" is a bounded **N-way parallel scatter-gather**, each shard query **paginated** on `LastEvaluatedKey`.
+
+`current_market_value` is **denormalized onto each inventory item** and refreshed by the daily sync. This lets valuation / summary / filter-search read inventory with **no per-card lookups** — the core "structured to optimize queries" win, and what makes an in-memory cached snapshot cheap. Freshness is bounded by the daily sync, which is acceptable because prices themselves update daily.
 
 | Entity | PK | SK | GSI1PK | GSI1SK | Key attributes |
 |---|---|---|---|---|---|
 | **Catalog card** | `CARD#<id>` | `META` | `SET#<setId>` | `CARD#<id>` | name, set_id, set_name, number, rarity, types[], images{small,large}, `prices` (finish → {market,low,mid,high}), `graded_prices` (`COMPANY#grade` → market value), last_synced_at |
 | **Raw price point** | `CARD#<id>` | `PRICE#RAW#<finish>#<date>` | — | — | finish, date, market, low, mid, high, source |
 | **Graded price point** | `CARD#<id>` | `PRICE#GRADED#<company>#<grade>#<date>` | — | — | company, grade, date, market_value, source=`manual` |
-| **Inventory — raw** | `INV` | `CARD#<id>#RAW#<finish>#<condition>` | `CARD#<id>` | `INV#RAW#<finish>#<condition>` | card_id, finish, condition, quantity, listed_price, cost_basis, current_market_value, acquired_at |
-| **Inventory — graded** | `INV` | `CARD#<id>#GRADED#<company>#<grade>#<cert>` | `CARD#<id>` | `INV#GRADED#<company>#<grade>` | card_id, company, grade, cert_number, quantity=1, listed_price, cost_basis, current_market_value, acquired_at |
+| **Inventory — raw** | `INV#<bucket>` | `CARD#<id>#RAW#<finish>#<condition>` | `CARD#<id>` | `INV#RAW#<finish>#<condition>` | card_id, finish, condition, quantity, listed_price, cost_basis, current_market_value, acquired_at |
+| **Inventory — graded** | `INV#<bucket>` | `CARD#<id>#GRADED#<company>#<grade>#<cert>` | `CARD#<id>` | `INV#GRADED#<company>#<grade>` | card_id, company, grade, cert_number, quantity=1, listed_price, cost_basis, current_market_value, acquired_at |
+
+`bucket = hash(card_id) % 10`. GSI1 keys are independent of the shard, so inventory-by-card (pattern 4) still works without knowing the bucket.
 
 **Access-pattern coverage:**
 
@@ -73,12 +77,12 @@ Graded market value is modeled **per `(card, company, grade)`** (a PSA 10 of a c
 |---|---|---|
 | 1 | Card by ID (market price / trade-target lookup) | `PK=CARD#<id>, SK=META` — point read |
 | 2 | Browse catalog by set | GSI1 `PK=SET#<setId>` (rarity filtered in app; sets are small) |
-| 3 | List entire inventory (summary, valuation, filter search, trade math) | `PK=INV` — one query, hundreds of items |
+| 3 | List entire inventory (summary, valuation, filter search, trade math) | query all N shards `PK=INV#0..9` in parallel (scatter-gather), each paginated on `LastEvaluatedKey` |
 | 4 | Inventory rows for a given card (all conditions/grades) | GSI1 `PK=CARD#<id>, SK begins_with INV#` |
-| 5 | Price history for a card over a date range | `PK=CARD#<id>, SK between PRICE#RAW#<finish>#<start>..<end>` (or `begins_with PRICE#RAW#` for all finishes; `PRICE#GRADED#…` for graded) |
+| 5 | Price history for a card over a date range | `PK=CARD#<id>, SK between PRICE#RAW#<finish>#<start>..<end>` (or `begins_with PRICE#RAW#` for all finishes; `PRICE#GRADED#…` for graded), paginated |
 | 6 | Daily sync: upsert cards + append price points | `BatchWriteItem` (chunked to 25) |
 
-Price-point items carry **no** GSI1 keys, so they stay out of GSI1 — the index holds only catalog-by-set and inventory-by-card, keeping it small. Filter-mode search needs **no extra index**: list inventory (pattern 3) and filter in memory.
+**Every multi-item read paginates** on `LastEvaluatedKey` (a `Query` page is ≤ 1 MB ≈ a few thousand of these items). Price-point items carry **no** GSI1 keys, so they stay out of GSI1 — the index holds only catalog-by-set and inventory-by-card, keeping it small. Filter-mode search needs **no extra index**: load inventory (pattern 3) and filter in memory over a cached snapshot — no partitioning scheme turns multi-attribute faceted filtering (set + condition + rarity + price + name) into a single DynamoDB query, so we narrow by key then filter in app.
 
 **Enums / value domains:**
 - `condition`: `NM | LP | MP | HP | DMG`
@@ -86,7 +90,7 @@ Price-point items carry **no** GSI1 keys, so they stay out of GSI1 — the index
 - `grade`: `Decimal` (whole and half grades, e.g. `10`, `9.5`)
 - `finish`: whatever keys PokemonTCG.io returns (`normal`, `holofoil`, `reverseHolofoil`, `1stEditionHolofoil`, …)
 
-**Scaling caveat (not built now):** the single `INV` partition is fine for hundreds–low-thousands of items. If inventory ever reaches tens of thousands, shard it (`INV#<bucket>`).
+**Scaling notes:** inventory is sharded (`N = 10`) from the start, which carries tens of thousands of items comfortably. `N` is fixed at table-design time, so it's chosen with headroom; raising it later means a re-key migration. If faceted search ever needs to scale to very large inventories under high concurrency, a dedicated search index (OpenSearch) fed from this table is the next step — deliberately **not** built now.
 
 ---
 
@@ -168,7 +172,9 @@ InventoryItem = Annotated[
 
 **Repository — `services/dynamodb.py`**
 
-A class `InventoryRepository` wrapping `boto3.resource("dynamodb").Table(name)`. Constructed with the table name + optional `endpoint_url` (so tests can point at a local/mocked DynamoDB). It owns model↔item (de)serialization and **all `Decimal` conversion**. It is **pure persistence** — no filtering, sorting, or profit math (those live in the slices that consume it).
+A class `InventoryRepository` wrapping `boto3.resource("dynamodb").Table(name)`. Constructed with the table name + optional `endpoint_url` (so tests can point at a local/mocked DynamoDB). It owns model↔item (de)serialization and **all `Decimal` conversion**. It is **pure persistence** — no filtering, sorting, profit math, or caching (those live in the slices that consume it).
+
+A module constant `INVENTORY_SHARD_COUNT = 10` and a helper `_bucket(card_id) -> int` define sharding. **The hash must be stable across processes** — `_bucket` uses a fixed digest (e.g. `crc32`/`md5` of `card_id`), **never Python's built-in `hash()`** (string hashing is salted per-process via `PYTHONHASHSEED`, which would send the same card to different buckets across runs and break `get`/`delete`). Every list/query method **paginates internally** on `LastEvaluatedKey` and returns the complete result set; `list_inventory()` additionally fans out across all shards and merges. Item-level methods derive the shard from `card_id`.
 
 ```python
 # catalog
@@ -183,10 +189,10 @@ get_price_history(card_id, *, finish=None, company=None, grade=None,
                   start=None, end=None) -> list[PricePoint]
 
 # inventory
-put_inventory_item(item: InventoryItem) -> None
+put_inventory_item(item: InventoryItem) -> None          # shard derived from card_id
 get_inventory_item(<key fields>) -> InventoryItem | None
-list_inventory() -> list[InventoryItem]                  # PK=INV, one query
-list_inventory_for_card(card_id) -> list[InventoryItem]  # GSI1
+list_inventory() -> list[InventoryItem]                  # scatter-gather over N shards, paginated
+list_inventory_for_card(card_id) -> list[InventoryItem]  # GSI1 (shard-independent)
 delete_inventory_item(<key fields>) -> None
 refresh_inventory_market_values(price_lookup) -> int     # sync denormalizes current_market_value
 ```
@@ -234,7 +240,7 @@ Tests are written RED-first, one behavior at a time, per the project's outside-i
 | Layer | Boundary | Coverage |
 |---|---|---|
 | Pydantic models | pure | discriminated union raw vs. graded, required fields per kind, `Decimal` coercion |
-| Repository `dynamodb.py` | **`moto`** (`@mock_aws`) | every access pattern: catalog upsert/get, list-by-set (GSI1), inventory put/list (INV partition), list-for-card (GSI1 `begins_with`), price-history range (`between`/`begins_with`), 25-item batch chunking, `Decimal` round-trip, not-found → `None` |
+| Repository `dynamodb.py` | **`moto`** (`@mock_aws`) | every access pattern: catalog upsert/get, list-by-set (GSI1), inventory put/list, list-for-card (GSI1 `begins_with`), price-history range (`between`/`begins_with`), 25-item batch chunking, `Decimal` round-trip, not-found → `None`; **sharding** (`_bucket` is deterministic; items land in expected shards; `list_inventory()` gathers across all shards); **pagination** (insert > 1 page of items → all are returned, not just the first page) |
 | `to_catalog_card` mapper | pure (real sample JSON) | multi-finish card, card with **no** prices, field extraction |
 | PokemonTCG client | `httpx.MockTransport` | pagination, retry/backoff — real `httpx` path, no network |
 | Sync orchestration | `moto` repo + fake client | catalog upserted, raw price points appended, graded snapshot for **owned** slabs, `current_market_value` refreshed, **idempotency (run twice/day → no dupes)**, per-card skip-and-continue |
@@ -275,5 +281,6 @@ backend/tests/
 
 - Automated graded-price feed (e.g., PriceCharting) replacing manual graded entry
 - Scheduler wiring for `run_daily_sync` (EventBridge → Lambda or container cron) — the "price-update" slice
-- `INV` partition sharding if inventory outgrows low-thousands
+- In-memory inventory cache in the consumer slices (filter-search, analytics) — strategy noted here, built there
+- Raising `INVENTORY_SHARD_COUNT` (re-key migration) or moving faceted search to OpenSearch if inventory + concurrency grow large
 - Cardmarket (EUR) prices alongside TCGplayer
