@@ -3,6 +3,18 @@ from datetime import datetime
 from decimal import Decimal
 
 from merlins_collection.models.catalog import CatalogCard, PricePoint
+from merlins_collection.models.inventory import (
+    Condition, GradingCompany, RawInventoryItem, GradedInventoryItem,
+)
+from merlins_collection.services.dynamodb import INVENTORY_SHARD_COUNT, _bucket
+
+
+def _raw_item(card_id="swsh1-1", finish="holofoil", condition="NM", qty=1):
+    return RawInventoryItem(
+        card_id=card_id, quantity=qty, listed_price=Decimal("10"),
+        cost_basis=Decimal("4"), acquired_at=_date(2026, 1, 1),
+        finish=finish, condition=Condition(condition),
+    )
 
 
 def _card(card_id="swsh1-1", set_id="swsh1", market="12.50"):
@@ -103,3 +115,40 @@ def test_query_pagination_follows_last_evaluated_key(dynamo_repo, monkeypatch):
     assert len(got) == 2
     assert len(calls) == 2
     assert "ExclusiveStartKey" in calls[1]
+
+
+def test_bucket_is_stable_and_in_range():
+    assert _bucket("swsh1-1") == _bucket("swsh1-1")
+    assert 0 <= _bucket("swsh1-1") < INVENTORY_SHARD_COUNT
+
+
+def test_put_then_get_inventory_item(dynamo_repo):
+    item = _raw_item()
+    dynamo_repo.put_inventory_item(item)
+    assert dynamo_repo.get_inventory_item(item) == item
+
+
+def test_delete_inventory_item(dynamo_repo):
+    item = _raw_item()
+    dynamo_repo.put_inventory_item(item)
+    dynamo_repo.delete_inventory_item(item)
+    assert dynamo_repo.get_inventory_item(item) is None
+
+
+def test_list_inventory_gathers_across_shards(dynamo_repo):
+    # card_ids chosen so they land in different buckets in a real run; the count is what matters
+    items = [_raw_item(card_id=f"card-{i}") for i in range(25)]
+    for it in items:
+        dynamo_repo.put_inventory_item(it)
+    listed = dynamo_repo.list_inventory()
+    assert len(listed) == 25
+    assert {i.card_id for i in listed} == {f"card-{i}" for i in range(25)}
+
+
+def test_list_inventory_for_card(dynamo_repo):
+    dynamo_repo.put_inventory_item(_raw_item(condition="NM"))
+    dynamo_repo.put_inventory_item(_raw_item(condition="LP"))
+    dynamo_repo.put_inventory_item(_raw_item(card_id="other"))
+    rows = dynamo_repo.list_inventory_for_card("swsh1-1")
+    assert len(rows) == 2
+    assert {r.condition for r in rows} == {Condition.NM, Condition.LP}

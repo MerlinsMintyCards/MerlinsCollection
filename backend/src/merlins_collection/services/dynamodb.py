@@ -9,6 +9,7 @@ import boto3
 from boto3.dynamodb.conditions import Key
 
 from merlins_collection.models.catalog import CatalogCard, PricePoint
+from merlins_collection.models.inventory import InventoryItemAdapter
 
 INVENTORY_SHARD_COUNT = 10
 
@@ -111,6 +112,52 @@ class InventoryRepository:
             & Key("GSI1SK").begins_with("CARD#"),
         )
         return [CatalogCard.model_validate(i) for i in items]
+
+    # ---- inventory ----
+    def _inventory_keys(self, item) -> tuple[str, str, str]:
+        pk = f"INV#{_bucket(item.card_id)}"
+        if item.kind == "raw":
+            sk = f"CARD#{item.card_id}#RAW#{item.finish}#{item.condition}"
+            gsi1sk = f"INV#RAW#{item.finish}#{item.condition}"
+        else:
+            grade_key = _grade_key(item.grade)
+            sk = f"CARD#{item.card_id}#GRADED#{item.company}#{grade_key}#{item.cert_number}"
+            gsi1sk = f"INV#GRADED#{item.company}#{_grade_key(item.grade)}"
+        return pk, sk, gsi1sk
+
+    def put_inventory_item(self, item):
+        pk, sk, gsi1sk = self._inventory_keys(item)
+        body = _serialize(item.model_dump(mode="python"))
+        self._table.put_item(
+            Item={
+                "PK": pk, "SK": sk,
+                "GSI1PK": f"CARD#{item.card_id}", "GSI1SK": gsi1sk,
+                "entity": "inventory_item", **body,
+            }
+        )
+
+    def get_inventory_item(self, item):
+        pk, sk, _ = self._inventory_keys(item)
+        found = self._table.get_item(Key={"PK": pk, "SK": sk}).get("Item")
+        return InventoryItemAdapter.validate_python(found) if found else None
+
+    def delete_inventory_item(self, item):
+        pk, sk, _ = self._inventory_keys(item)
+        self._table.delete_item(Key={"PK": pk, "SK": sk})
+
+    def list_inventory(self):
+        items = []
+        for bucket in range(INVENTORY_SHARD_COUNT):
+            items.extend(self._query_all(KeyConditionExpression=Key("PK").eq(f"INV#{bucket}")))
+        return [InventoryItemAdapter.validate_python(i) for i in items]
+
+    def list_inventory_for_card(self, card_id):
+        items = self._query_all(
+            IndexName="GSI1",
+            KeyConditionExpression=Key("GSI1PK").eq(f"CARD#{card_id}")
+            & Key("GSI1SK").begins_with("INV#"),
+        )
+        return [InventoryItemAdapter.validate_python(i) for i in items]
 
     # ---- graded current price (separate item; catalog put never touches it) ----
     def set_graded_market_value(self, card_id, company, grade, value: Decimal):
