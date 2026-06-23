@@ -52,6 +52,13 @@ def test_me_rejects_invalid_token(authed):
     assert resp.status_code == 401
 
 
+def test_me_rejects_non_bearer_scheme(authed):
+    client, _ = authed
+    resp = client.get("/auth/me", headers={"Authorization": "Basic dXNlcjpwYXNz"})
+    assert resp.status_code == 401
+    assert resp.headers.get("WWW-Authenticate") == "Bearer"
+
+
 def test_me_returns_503_when_jwks_unavailable(authed, mint_token, cognito_config):
     from merlins_collection.services.cognito import CognitoJwtVerifier
 

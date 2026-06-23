@@ -10,7 +10,6 @@ from merlins_collection.services.cognito import (
     JwksUnavailableError,
 )
 
-
 # --- happy paths ---------------------------------------------------------
 
 
@@ -156,3 +155,57 @@ def test_issuer_is_derived_from_region_and_pool(make_verifier):
         make_verifier().issuer
         == "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_testpool"
     )
+
+
+# --- claim presence / typing hardening -----------------------------------
+
+
+def test_verify_rejects_token_with_no_exp(make_verifier, mint_token):
+    # A token with no expiry must never be accepted (it would never expire).
+    with pytest.raises(InvalidTokenError):
+        make_verifier().verify(mint_token({"exp": None}))
+
+
+def test_verify_rejects_missing_sub(make_verifier, mint_token):
+    with pytest.raises(InvalidTokenError):
+        make_verifier().verify(mint_token({"sub": None}))
+
+
+def test_verify_ignores_non_list_groups_claim(make_verifier, mint_token):
+    # A string `cognito:groups` must not be exploded into per-character groups
+    # (and must not falsely grant admin).
+    user = make_verifier().verify(mint_token({"cognito:groups": "admin"}))
+    assert user.groups == []
+    assert user.is_admin is False
+
+
+def test_verify_raises_jwks_unavailable_on_non_json_body(make_verifier, mint_token):
+    def handler(request):
+        return httpx.Response(200, text="<html>captive portal</html>")
+
+    http = httpx.Client(transport=httpx.MockTransport(handler))
+    verifier = make_verifier(with_jwks=False, http_client=http)
+
+    with pytest.raises(JwksUnavailableError):
+        verifier.verify(mint_token())
+
+
+# --- configuration safety ------------------------------------------------
+
+
+def test_verifier_rejects_empty_client_id(cognito_config):
+    with pytest.raises(ValueError):
+        CognitoJwtVerifier(
+            region=cognito_config["region"],
+            user_pool_id=cognito_config["user_pool_id"],
+            client_id="",
+        )
+
+
+def test_verifier_rejects_empty_user_pool_id(cognito_config):
+    with pytest.raises(ValueError):
+        CognitoJwtVerifier(
+            region=cognito_config["region"],
+            user_pool_id="",
+            client_id=cognito_config["client_id"],
+        )

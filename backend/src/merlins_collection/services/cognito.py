@@ -49,6 +49,12 @@ class CognitoJwtVerifier:
         leeway: int = 60,
         min_refresh_interval: float = 60.0,
     ):
+        # Fail closed: empty config would silently disable the issuer/client_id
+        # guards (e.g. a token with client_id="" would match an unset setting).
+        if not region or not user_pool_id or not client_id:
+            raise ValueError(
+                "CognitoJwtVerifier requires non-empty region, user_pool_id, and client_id"
+            )
         self._region = region
         self._user_pool_id = user_pool_id
         self._client_id = client_id
@@ -73,8 +79,8 @@ class CognitoJwtVerifier:
             resp = client.get(url)
             if resp.status_code != 200:
                 raise JwksUnavailableError(f"JWKS fetch returned HTTP {resp.status_code}")
-            data = resp.json()
-        except httpx.HTTPError as exc:
+            data = resp.json()  # ValueError if a 200 carries a non-JSON body
+        except (httpx.HTTPError, ValueError) as exc:
             raise JwksUnavailableError("JWKS fetch failed") from exc
         finally:
             if self._http_client is None:
@@ -84,10 +90,15 @@ class CognitoJwtVerifier:
         return data
 
     def _get_jwks(self, *, force_refresh: bool = False) -> dict:
+        # Lock-free by design: under a threadpool two requests may race a fetch,
+        # but dict assignment is atomic and the worst case is a redundant fetch.
         if self._static_jwks is not None:
             return self._static_jwks
         if self._cached_jwks is None:
             return self._fetch_jwks()
+        # A forced refresh only helps a *stale* cache; the cooldown there has
+        # long elapsed. A just-populated cache is already fresh (Cognito
+        # publishes keys before signing with them), so blocking it loses nothing.
         if force_refresh and (time.monotonic() - self._last_fetch) >= self._min_refresh_interval:
             return self._fetch_jwks()
         return self._cached_jwks
@@ -126,7 +137,11 @@ class CognitoJwtVerifier:
                 key,
                 algorithms=["RS256"],  # pin: blocks alg=none / HS256 confusion
                 issuer=self.issuer,
-                options={"verify_aud": False, "leeway": self._leeway},
+                options={
+                    "verify_aud": False,  # access tokens have no `aud`
+                    "require_exp": True,  # a token with no expiry never expires
+                    "leeway": self._leeway,
+                },
             )
         except JWTError as exc:
             raise InvalidTokenError(str(exc) or "token validation failed") from exc
@@ -137,12 +152,19 @@ class CognitoJwtVerifier:
         # token minted for another app client in the same pool. Must be present.
         if claims.get("client_id") != self._client_id:
             raise InvalidTokenError("client_id does not match")
+        # `sub` is the principal identity; never attribute actions to "".
+        sub = claims.get("sub")
+        if not sub:
+            raise InvalidTokenError("token missing 'sub'")
 
-        groups = claims.get("cognito:groups") or []
+        # `cognito:groups` is normally a list and absent when the user is in no
+        # groups; reject any other shape (a string would explode into chars).
+        raw_groups = claims.get("cognito:groups")
+        groups = raw_groups if isinstance(raw_groups, list) else []
         return AuthenticatedUser(
-            sub=claims.get("sub", ""),
+            sub=sub,
             username=claims.get("username") or claims.get("cognito:username"),
             email=claims.get("email"),
-            groups=list(groups),
+            groups=groups,
             is_admin=self._admin_group in groups,
         )
