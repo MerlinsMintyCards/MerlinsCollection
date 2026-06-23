@@ -744,7 +744,7 @@ Update the existing catalog import in `backend/src/merlins_collection/services/d
         if p.kind == "raw":
             sk = f"PRICE#RAW#{p.finish}#{p.date.isoformat()}"
         else:
-            sk = f"PRICE#GRADED#{p.company}#{p.grade}#{p.date.isoformat()}"
+            sk = f"PRICE#GRADED#{p.company}#{_grade_key(p.grade)}#{p.date.isoformat()}"
         body = _serialize(p.model_dump(mode="python"))
         return {"PK": f"CARD#{p.card_id}", "SK": sk, "entity": "price_point", **body}
 
@@ -756,7 +756,7 @@ Update the existing catalog import in `backend/src/merlins_collection/services/d
     def get_price_history(self, card_id, *, finish=None, company=None,
                           grade=None, start=None, end=None):
         if company is not None:
-            prefix = f"PRICE#GRADED#{company}#{grade}#" if grade is not None else f"PRICE#GRADED#{company}#"
+            prefix = f"PRICE#GRADED#{company}#{_grade_key(grade)}#" if grade is not None else f"PRICE#GRADED#{company}#"
         elif finish is not None:
             prefix = f"PRICE#RAW#{finish}#"
         else:
@@ -877,8 +877,8 @@ Add these methods to `InventoryRepository`:
             sk = f"CARD#{item.card_id}#RAW#{item.finish}#{item.condition}"
             gsi1sk = f"INV#RAW#{item.finish}#{item.condition}"
         else:
-            sk = f"CARD#{item.card_id}#GRADED#{item.company}#{item.grade}#{item.cert_number}"
-            gsi1sk = f"INV#GRADED#{item.company}#{item.grade}"
+            sk = f"CARD#{item.card_id}#GRADED#{item.company}#{_grade_key(item.grade)}#{item.cert_number}"
+            gsi1sk = f"INV#GRADED#{item.company}#{_grade_key(item.grade)}"
         return pk, sk, gsi1sk
 
     def put_inventory_item(self, item):
