@@ -83,3 +83,16 @@ def test_sync_catalog_skips_bad_cards(dynamo_repo):
     summary = sync_catalog(dynamo_repo, FakeClient([{"bad": "no id"}, RAW]), date(2026, 6, 22))
     assert summary["failures"] == 1
     assert summary["cards_synced"] == 1
+
+
+def test_run_daily_sync_includes_graded_snapshot_and_refresh(dynamo_repo):
+    # Own a graded slab and set its manual market value.
+    dynamo_repo.set_graded_market_value("swsh1-1", GradingCompany.PSA, Decimal("10"), Decimal("500"))
+    dynamo_repo.put_inventory_item(_graded_item())
+
+    summary = run_daily_sync(dynamo_repo, FakeClient([RAW]), date(2026, 6, 22))
+
+    # merge completeness: graded snapshot key is present and counted
+    assert summary["graded_points_written"] == 1
+    # graded refresh write-back path: current_market_value denormalized from the manual graded value
+    assert dynamo_repo.get_inventory_item(_graded_item()).current_market_value == Decimal("500")
