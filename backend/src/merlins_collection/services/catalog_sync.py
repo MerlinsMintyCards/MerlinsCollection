@@ -54,3 +54,59 @@ def sync_catalog(repo, client, today: date, *, batch_size: int = 500) -> dict:
         "price_points_written": points_written,
         "failures": failures,
     }
+
+
+def snapshot_graded_prices(repo, today: date) -> dict:
+    seen = set()
+    written = 0
+    for item in repo.list_inventory():
+        if item.kind != "graded":
+            continue
+        key = (item.card_id, item.company, item.grade)
+        if key in seen:
+            continue
+        seen.add(key)
+        value = repo.get_graded_market_value(item.card_id, item.company, item.grade)
+        if value is None:
+            continue
+        repo.append_price_points(
+            [
+                PricePoint(
+                    card_id=item.card_id, date=today, source="manual",
+                    kind="graded", company=item.company, grade=item.grade, market=value,
+                )
+            ]
+        )
+        written += 1
+    return {"graded_points_written": written}
+
+
+def refresh_inventory_market_values(repo) -> int:
+    updated = 0
+    catalog_cache: dict = {}
+    graded_cache: dict = {}
+    for item in repo.list_inventory():
+        if item.kind == "raw":
+            if item.card_id not in catalog_cache:
+                catalog_cache[item.card_id] = repo.get_catalog_card(item.card_id)
+            card = catalog_cache[item.card_id]
+            finish_price = card.prices.get(item.finish) if card else None
+            value = finish_price.market if finish_price else None
+        else:
+            ckey = (item.card_id, item.company, item.grade)
+            if ckey not in graded_cache:
+                graded_cache[ckey] = repo.get_graded_market_value(
+                    item.card_id, item.company, item.grade
+                )
+            value = graded_cache[ckey]
+        if value is not None and value != item.current_market_value:
+            repo.put_inventory_item(item.model_copy(update={"current_market_value": value}))
+            updated += 1
+    return updated
+
+
+def run_daily_sync(repo, client, today: date) -> dict:
+    summary = sync_catalog(repo, client, today)
+    summary.update(snapshot_graded_prices(repo, today))
+    summary["items_refreshed"] = refresh_inventory_market_values(repo)
+    return summary
