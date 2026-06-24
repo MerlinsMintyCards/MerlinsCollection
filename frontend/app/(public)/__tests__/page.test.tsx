@@ -18,12 +18,12 @@ describe('Home page', () => {
   it('renders every major section heading', () => {
     render(<HomePage />)
     ;[
-      'A few friends, a lot of cards, and a cat.',
+      'Three friends, a lot of cards, and a cat.',
       'Three reasons to stop by our table.',
       'A peek at the collection.',
       'Catch us at a card show.',
-      'Start with the basics.',
-      "Let's find your card.",
+      'Let us help you',
+      'We have an answer!',
     ].forEach((t) =>
       expect(screen.getByRole('heading', { level: 2, name: t })).toBeInTheDocument(),
     )

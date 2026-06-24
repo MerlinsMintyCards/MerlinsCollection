@@ -6,17 +6,17 @@ const cards: { badge: string; title: string; body: string }[] = [
   {
     badge: 'Buy',
     title: 'Find your next card',
-    body: 'Dig through our boxes — cheap singles up to graded slabs. If you collect it, chances are we have some.',
+    body: 'Come look through our collection; we have everything from cheap singles to PSA slabs. If you are looking for something specific, we can check if we have it.',
   },
   {
     badge: 'Sell',
     title: 'Cash in your collection',
-    body: "Bring your cards by the table and we'll give you a fair number based on what they actually sell for.",
+    body: 'Bring your cards to the table, and Merlin will appraise them.',
   },
   {
     badge: 'Trade',
-    title: 'Swap toward a grail',
-    body: "Trade up, or sideways. Bring what you've got and we'll work something out.",
+    title: 'Tired of your old cards?',
+    body: 'We are always open to trades of any price or amount. Come stop by, and we will take a look.',
   },
 ]
 

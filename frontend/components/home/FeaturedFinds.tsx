@@ -20,7 +20,7 @@ export default function FeaturedFinds() {
         <SectionHeading
           eyebrow="From the case"
           title="A peek at the collection."
-          subtitle="A few recent finds. Sign in to search the full inventory by set, condition, and price — or just ask in plain English."
+          subtitle="Some of our favorites. Sign in to search the full inventory by set, condition, and price!"
         />
         <CollectionRow cards={cards} />
         <div className="mt-[22px]">

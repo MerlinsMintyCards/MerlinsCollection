@@ -39,7 +39,7 @@ describe('bottom Home sections', () => {
   it('FinalCTA renders the closing call to action', () => {
     render(<FinalCTA />)
     expect(
-      screen.getByRole('heading', { level: 2, name: "Let's find your card." }),
+      screen.getByRole('heading', { level: 2, name: 'We have an answer!' }),
     ).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Get in touch' })).toHaveAttribute('href', '/about#contact')
   })

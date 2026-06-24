@@ -63,8 +63,7 @@ export default function Footer() {
               <span className="font-serif font-semibold text-[19px]">Merlin&apos;s Minty Cards</span>
             </div>
             <p className="text-[14px] text-[#9fbfa8] max-w-[34ch]">
-              Buy. Sell. Trade. A collector-run Pokémon card shop built on honesty and 25 years of
-              love for the hobby.
+              Buy. Sell. Trade. Meow.
             </p>
           </div>
           {columns.map((col) => (

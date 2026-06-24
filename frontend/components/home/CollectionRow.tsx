@@ -3,18 +3,40 @@
 import Image from 'next/image'
 import { useEffect, useRef } from 'react'
 import { focusScale } from '@/lib/collectionFocus'
+import { useCardTilt } from '@/hooks/useCardTilt'
 
 type Card = { src: string; alt: string }
 
-// How far (in scale units) the centre card grows and the edge cards shrink.
 const FOCUS = { min: 0.92, max: 1.06 }
+
+// Extracted so useCardTilt can be called at the top level (hooks can't be used in map callbacks).
+function CollectionCard({ card }: { card: Card }) {
+  const { ref, onMouseMove, onMouseLeave } = useCardTilt()
+  return (
+    <div
+      ref={ref}
+      className="collection-card relative shrink-0 basis-[44%] sm:basis-auto aspect-[5/7] rounded-xl overflow-hidden shadow-card bg-cream"
+      onMouseMove={onMouseMove}
+      onMouseLeave={onMouseLeave}
+    >
+      <Image
+        src={card.src}
+        alt={card.alt}
+        fill
+        sizes="(max-width: 640px) 44vw, 18vw"
+        className="object-cover"
+      />
+      <div className="card-glare-overlay" aria-hidden />
+    </div>
+  )
+}
 
 export default function CollectionRow({ cards }: { cards: Card[] }) {
   const rowRef = useRef<HTMLDivElement>(null)
 
   // Mobile only: as the row is side-scrolled, the card nearest the centre
   // grows and the rest shrink. On desktop the row isn't scrollable, so this
-  // stays inert and CSS :hover owns the interaction instead.
+  // stays inert and the tilt hook owns the interaction instead.
   useEffect(() => {
     const row = rowRef.current
     if (!row) return
@@ -28,7 +50,6 @@ export default function CollectionRow({ cards }: { cards: Card[] }) {
       const scrollable = row.scrollWidth - row.clientWidth > 4
 
       if (!scrollable) {
-        // Desktop grid — hand the interaction back to CSS hover.
         cardEls.forEach((el) => {
           el.style.transform = ''
         })
@@ -68,18 +89,7 @@ export default function CollectionRow({ cards }: { cards: Card[] }) {
       className="collection-row flex sm:grid sm:grid-cols-5 gap-4 overflow-x-auto sm:overflow-visible py-3 sm:py-0"
     >
       {cards.map((card, i) => (
-        <div
-          key={i}
-          className="collection-card relative shrink-0 basis-[44%] sm:basis-auto aspect-[5/7] rounded-xl overflow-hidden shadow-card bg-cream"
-        >
-          <Image
-            src={card.src}
-            alt={card.alt}
-            fill
-            sizes="(max-width: 640px) 44vw, 18vw"
-            className="object-cover"
-          />
-        </div>
+        <CollectionCard key={i} card={card} />
       ))}
     </div>
   )

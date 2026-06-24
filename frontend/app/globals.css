@@ -20,7 +20,11 @@ body {
   color: var(--ink);
 }
 
-/* ---- FlipCard: 3D flip with anti-shake (hover binds to the stable wrapper) ---- */
+/* ---- FlipCard: 3D flip + tilt inspect effect ----
+   The flip rotation and the cursor tilt are composed into ONE inline transform
+   on .flip-inner (see FlipCard.tsx), so there is a single 3D rotation context.
+   .flip-stage only establishes the shared perspective; it must NOT also carry
+   preserve-3d, or the nested rotations distort. */
 .flip-stage {
   perspective: 1500px;
   width: min(262px, 72vw);
@@ -32,15 +36,9 @@ body {
   width: 100%;
   height: 100%;
   transform-style: preserve-3d;
-  transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-.flip-inner.is-flipped {
-  transform: rotateY(180deg);
-}
-@media (hover: hover) and (pointer: fine) {
-  .flip-stage:hover .flip-inner {
-    transform: rotateY(180deg);
-  }
+  will-change: transform;
+  /* transform + transition are set inline by FlipCard so the flip (0.8s) and
+     the tilt (instant / 0.6s return) can use different timings on demand. */
 }
 .flip-face {
   position: absolute;
@@ -55,7 +53,37 @@ body {
 }
 @media (prefers-reduced-motion: reduce) {
   .flip-inner {
-    transition: none;
+    will-change: auto;
+  }
+}
+
+/* ---- Holographic glare overlay (used by FlipCard faces and CollectionCard) ---- */
+.card-glare-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  background: radial-gradient(
+    circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(255, 255, 255, 0.18) 0%,
+    rgba(255, 255, 255, 0.1) 22%,
+    rgba(180, 255, 210, 0.08) 48%,
+    rgba(255, 210, 100, 0.05) 72%,
+    transparent 100%
+  );
+  mix-blend-mode: color-dodge;
+}
+@media (hover: hover) and (pointer: fine) {
+  .flip-inner:hover .card-glare-overlay,
+  .collection-card:hover .card-glare-overlay {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .card-glare-overlay {
+    display: none;
   }
 }
 
@@ -70,13 +98,10 @@ body {
    devices so it never sticks on touch. */
 @media (hover: hover) and (pointer: fine) {
   .collection-card {
-    transition:
-      transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
-      box-shadow 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    transition: box-shadow 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
-  /* Hovering a card smoothly grows it; siblings stay put. */
+  /* Transform is now driven by useCardTilt inline; only add shadow + z-index via CSS. */
   .collection-card:hover {
-    transform: scale(1.07);
     box-shadow: 0 22px 44px rgba(16, 59, 28, 0.3);
     z-index: 10;
   }

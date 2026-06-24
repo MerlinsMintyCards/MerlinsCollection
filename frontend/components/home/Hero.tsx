@@ -11,15 +11,15 @@ export default function Hero() {
         <div className="grid wide:grid-cols-[1.1fr_0.9fr] gap-12 items-center">
           <div>
             <Eyebrow>Buy · Sell · Trade</Eyebrow>
-            <h1 className="font-serif font-semibold text-forest-deep leading-[1.1] tracking-[-0.01em] text-[clamp(34px,6.4vw,54px)] my-4">
+            <h1 className="font-serif font-semibold text-forest-deep leading-[1.1] tracking-[-0.01em] text-[clamp(34px,6.4vw,46px)] my-4">
               Pokémon cards,
               <br />
               and a cat named Merlin.
             </h1>
             <p className="text-muted text-[clamp(16px,2.4vw,19px)] max-w-[42ch] mb-7">
-              We&apos;re a few college friends who never really grew out of Pokémon. You&apos;ll find
-              us set up at card shows around the area, buying, selling, and trading cards, raw and
-              graded, at fair prices. Merlin&apos;s our cat. He runs the logo, not much else.
+              We&apos;re a few college friends who rediscovered our love of Pokémon. You&apos;ll
+              often find us set up at card shows around the area, buying, selling, and trading cards.
+              Merlin is our cat. He thinks he&apos;s in charge, but doesn&apos;t really do much.
             </p>
             <div className="flex flex-col sm:flex-row gap-3.5">
               <Button href="/about">Read our story</Button>

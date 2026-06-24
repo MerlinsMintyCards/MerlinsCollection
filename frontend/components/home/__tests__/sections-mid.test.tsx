@@ -22,15 +22,15 @@ describe('mid Home sections', () => {
   it('StoryTeaser renders the heading and link to About', () => {
     render(<StoryTeaser />)
     expect(
-      screen.getByRole('heading', { level: 2, name: 'A few friends, a lot of cards, and a cat.' }),
+      screen.getByRole('heading', { level: 2, name: 'Three friends, a lot of cards, and a cat.' }),
     ).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'More about Merlin' })).toHaveAttribute('href', '/about')
+    expect(screen.getByRole('link', { name: 'Find out more about Merlin' })).toHaveAttribute('href', '/about')
   })
 
   it('BuySellTrade renders the three offer cards', () => {
     render(<BuySellTrade />)
     expect(screen.getByText('Find your next card')).toBeInTheDocument()
     expect(screen.getByText('Cash in your collection')).toBeInTheDocument()
-    expect(screen.getByText('Swap toward a grail')).toBeInTheDocument()
+    expect(screen.getByText('Tired of your old cards?')).toBeInTheDocument()
   })
 })

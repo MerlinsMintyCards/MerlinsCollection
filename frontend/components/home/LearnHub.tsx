@@ -8,8 +8,8 @@ export default function LearnHub() {
       <Container>
         <SectionHeading
           eyebrow="New to collecting?"
-          title="Start with the basics."
-          subtitle="No gatekeeping. Plain-English guides and a glossary to get you confident fast."
+          title="Let us help you"
+          subtitle="We've written articles for you to learn from, based on information we have accumulated over the years. This is information we would have wanted when we first started collecting."
         />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <Link
@@ -20,7 +20,7 @@ export default function LearnHub() {
               Articles &amp; guides
             </h3>
             <p className="text-white/80 text-[15px]">
-              Beginner-friendly reads on grading, sets, and smart collecting.
+              Beginner-friendly guides on smart collecting, especially for parents with kids becoming interested in Pokemon Cards.
             </p>
           </Link>
           <Link
@@ -31,7 +31,7 @@ export default function LearnHub() {
               Collectors Dictionary
             </h3>
             <p className="text-white/80 text-[15px]">
-              Every term — slab, PSA, holo, reverse — explained simply.
+              Commonly used vocabulary words at card shows.
             </p>
           </Link>
         </div>
