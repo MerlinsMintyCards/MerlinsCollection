@@ -10,11 +10,13 @@ from __future__ import annotations
 
 from functools import lru_cache
 
+import boto3
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from merlins_collection.config import settings
 from merlins_collection.models.auth import AuthenticatedUser
+from merlins_collection.services.bedrock import BedrockChatService
 from merlins_collection.services.cognito import (
     CognitoJwtVerifier,
     InvalidTokenError,
@@ -30,6 +32,20 @@ _bearer_scheme = HTTPBearer(auto_error=False)
 @lru_cache
 def get_repo() -> InventoryRepository:
     return InventoryRepository(settings.dynamodb_table_name, region_name=settings.aws_region)
+
+
+def get_bedrock_service() -> BedrockChatService:
+    client = boto3.client("bedrock-runtime", region_name=settings.aws_region)
+    # MCP tool executor is a stub until mcp_client is implemented
+    def _stub_executor(tool_name: str, tool_input: dict) -> str:
+        import json
+        return json.dumps({"error": "MCP tool executor not yet configured", "tool": tool_name})
+
+    return BedrockChatService(
+        client=client,
+        model_id=settings.bedrock_model_id,
+        tool_executor=_stub_executor,
+    )
 
 
 @lru_cache

@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from merlins_collection.dependencies import get_current_user, get_repo
 from merlins_collection.models.auth import AuthenticatedUser
