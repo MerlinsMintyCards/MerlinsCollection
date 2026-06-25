@@ -51,3 +51,8 @@ InventoryItem = Annotated[
 ]
 
 InventoryItemAdapter: TypeAdapter[InventoryItem] = TypeAdapter(InventoryItem)
+
+
+class InventorySearchResult(BaseModel):
+    items: list[InventoryItem]
+    total: int

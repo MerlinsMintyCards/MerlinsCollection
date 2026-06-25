@@ -20,10 +20,16 @@ from merlins_collection.services.cognito import (
     InvalidTokenError,
     JwksUnavailableError,
 )
+from merlins_collection.services.dynamodb import InventoryRepository
 
 # auto_error=False so a missing credential yields our own 401 (with a
 # WWW-Authenticate header) rather than FastAPI's default 403.
 _bearer_scheme = HTTPBearer(auto_error=False)
+
+
+@lru_cache
+def get_repo() -> InventoryRepository:
+    return InventoryRepository(settings.dynamodb_table_name, region_name=settings.aws_region)
 
 
 @lru_cache
