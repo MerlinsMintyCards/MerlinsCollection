@@ -1,8 +1,8 @@
-export type PricePoint = {
-  date: string;
-  price: number;
-  source: string;
-};
+import type { InventoryRepository, PricePoint } from "../repository.js";
+
+// Re-exported so existing direct importers of this module keep working after the
+// canonical definition moved to repository.ts.
+export type { PricePoint } from "../repository.js";
 
 export type PriceHistoryResult = {
   cardId: string;
@@ -10,6 +10,18 @@ export type PriceHistoryResult = {
   history: PricePoint[];
 };
 
-export async function getCardPriceHistory(cardId: string): Promise<PriceHistoryResult> {
-  throw new Error("Not implemented");
+export async function getCardPriceHistory(
+  repo: InventoryRepository,
+  cardId: string,
+): Promise<PriceHistoryResult> {
+  const cards = await repo.listCards();
+  const card = cards.find((c) => c.id === cardId);
+  if (card === undefined) {
+    throw new Error(`Card not found: ${cardId}`);
+  }
+
+  const history = await repo.getPriceHistory(cardId);
+  const sorted = [...history].sort((a, b) => Date.parse(a.date) - Date.parse(b.date));
+
+  return { cardId, cardName: card.name, history: sorted };
 }
