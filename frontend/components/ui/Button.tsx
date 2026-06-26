@@ -4,11 +4,12 @@ import type { ReactNode } from 'react'
 type Variant = 'primary' | 'ghost'
 
 const base =
-  'inline-block rounded-full text-center font-semibold text-[15px] px-6 py-3 transition-transform active:translate-y-px'
+  'inline-block rounded-full text-center font-semibold text-[15px] px-6 py-3 transition-all duration-200 active:translate-y-px'
 
 const variantClasses: Record<Variant, string> = {
-  primary: 'bg-forest text-white shadow-[0_8px_20px_rgba(31,110,50,0.25)]',
-  ghost: 'border-[1.5px] border-forest text-forest',
+  primary:
+    'bg-forest text-white shadow-[0_8px_20px_rgba(31,110,50,0.25)] hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(31,110,50,0.35)]',
+  ghost: 'border-[1.5px] border-forest text-forest hover:bg-forest/[0.06]',
 }
 
 export default function Button({

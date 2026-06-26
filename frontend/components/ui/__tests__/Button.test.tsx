@@ -2,18 +2,24 @@ import { render, screen } from '@testing-library/react'
 import Button from '@/components/ui/Button'
 
 describe('Button', () => {
-  it('renders a link with the given href', () => {
+  it('still renders a primary link with its href, label, and variant', () => {
     render(<Button href="/about">Read our story</Button>)
-    expect(screen.getByRole('link', { name: 'Read our story' })).toHaveAttribute('href', '/about')
+    const link = screen.getByRole('link', { name: 'Read our story' })
+    expect(link).toHaveAttribute('href', '/about')
+    expect(link).toHaveAttribute('data-variant', 'primary')
   })
 
-  it('renders a button element when no href is given', () => {
-    render(<Button>Submit</Button>)
-    expect(screen.getByRole('button', { name: 'Submit' })).toBeInTheDocument()
+  it('gives the primary variant a hover lift', () => {
+    render(<Button href="/x">Go</Button>)
+    expect(screen.getByRole('link', { name: 'Go' }).className).toMatch(/hover:-translate-y/)
   })
 
-  it('exposes the variant via data-variant', () => {
-    render(<Button href="/x" variant="ghost">Ghost</Button>)
-    expect(screen.getByRole('link', { name: 'Ghost' })).toHaveAttribute('data-variant', 'ghost')
+  it('gives the ghost variant a hover fill', () => {
+    render(
+      <Button href="/x" variant="ghost">
+        Go
+      </Button>,
+    )
+    expect(screen.getByRole('link', { name: 'Go' }).className).toMatch(/hover:bg-forest/)
   })
 })
