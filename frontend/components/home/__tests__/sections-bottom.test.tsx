@@ -77,4 +77,10 @@ describe('bottom sections reveal on scroll', () => {
     expect(container.querySelector('.reveal')).toBeInTheDocument()
     expect(container.querySelector('.hover-lift')).toBeInTheDocument()
   })
+
+  it('LearnHub staggers its two panels and lifts them on hover', () => {
+    const { container } = render(<LearnHub />)
+    expect(container.querySelectorAll('.reveal').length).toBeGreaterThanOrEqual(2)
+    expect(container.querySelectorAll('.hover-lift').length).toBeGreaterThanOrEqual(2)
+  })
 })
