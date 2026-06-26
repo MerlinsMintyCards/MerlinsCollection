@@ -3,13 +3,14 @@ import Container from '@/components/ui/Container'
 import Button from '@/components/ui/Button'
 import Eyebrow from '@/components/ui/Eyebrow'
 import FlipCard from '@/components/ui/FlipCard'
+import Reveal from '@/components/ui/Reveal'
 
 export default function Hero() {
   return (
     <section className="py-[60px]">
       <Container>
         <div className="grid wide:grid-cols-[1.1fr_0.9fr] gap-12 items-center">
-          <div>
+          <Reveal>
             <Eyebrow>Buy · Sell · Trade</Eyebrow>
             <h1 className="font-serif font-semibold text-forest-deep leading-[1.1] tracking-[-0.01em] text-[clamp(34px,6.4vw,46px)] my-4">
               Pokémon cards,
@@ -27,7 +28,7 @@ export default function Hero() {
                 See upcoming shows
               </Button>
             </div>
-          </div>
+          </Reveal>
 
           <div className="flex flex-col items-center order-first wide:order-none">
             <FlipCard

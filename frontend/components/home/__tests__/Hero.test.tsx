@@ -13,4 +13,9 @@ describe('Hero', () => {
     render(<Hero />)
     expect(screen.getByRole('button', { name: /tap to flip/i })).toBeInTheDocument()
   })
+
+  it('wraps the intro copy in a reveal wrapper', () => {
+    const { container } = render(<Hero />)
+    expect(container.querySelector('.reveal')).toBeInTheDocument()
+  })
 })
