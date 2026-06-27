@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 
+/** Small uppercase kicker (forest-green) shown above a heading. */
 export default function Eyebrow({
   children,
   className = '',

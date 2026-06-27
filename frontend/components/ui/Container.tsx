@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 
+/** Centers page content and caps it at the site's max width with responsive gutters. */
 export default function Container({
   children,
   className = '',

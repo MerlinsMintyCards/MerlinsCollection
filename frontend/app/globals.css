@@ -2,23 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --forest: #1f6e32;
-  --forest-deep: #103b1c;
-  --forest-mid: #2d8f44;
-  --mint: #a9e0b3;
-  --mint-soft: #d4f0d9;
-  --cream: #f5f0e8;
-  --paper: #fffdf8;
-  --ink: #241f1b;
-  --muted: #6f6457;
-  --line: #e6ddcc;
-}
-
-body {
-  background: var(--cream);
-  color: var(--ink);
-}
+/* Brand colors are defined once in tailwind.config.ts and applied with utility
+   classes (the <body> uses `bg-cream text-ink` in app/layout.tsx) — keep that
+   the single source of truth and don't reintroduce parallel CSS color vars here.
+   The only runtime CSS variables used below are --mouse-x / --mouse-y (set
+   inline by the tilt + glare effects) and the --font-* vars from next/font. */
 
 /* ---- FlipCard: 3D flip + tilt inspect effect ----
    The flip rotation and the cursor tilt are composed into ONE inline transform

@@ -1,14 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
-// next/image needs no Next runtime in tests — render a plain img
-vi.mock('next/image', () => ({
-  default: ({ src, alt, ...rest }: { src: string; alt: string }) => (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src={typeof src === 'string' ? src : ''} alt={alt} {...rest} />
-  ),
-}))
-
 import Navbar from '@/components/layout/Navbar'
 
 describe('Navbar', () => {

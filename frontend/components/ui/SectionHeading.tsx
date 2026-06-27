@@ -1,5 +1,6 @@
 import Eyebrow from './Eyebrow'
 
+/** Standard section header: an {@link Eyebrow} kicker, an `h2` title, and an optional subtitle. */
 export default function SectionHeading({
   eyebrow,
   title,

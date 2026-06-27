@@ -1,17 +1,6 @@
 import Link from 'next/link'
 import Badge from '@/components/ui/Badge'
-import type { Article } from '@/lib/articles'
-
-const dateFormat = new Intl.DateTimeFormat('en-US', {
-  year: 'numeric',
-  month: 'short',
-  day: 'numeric',
-})
-
-function formatDate(iso: string): string {
-  const parsed = new Date(iso)
-  return Number.isNaN(parsed.getTime()) ? iso : dateFormat.format(parsed)
-}
+import { formatArticleDate, type Article } from '@/lib/articles'
 
 /** Preview card for an article, linking to its full page. */
 export default function ArticleCard({ article }: { article: Article }) {
@@ -26,7 +15,7 @@ export default function ArticleCard({ article }: { article: Article }) {
       </h3>
       <p className="mt-2 flex-1 text-[15px] text-[#4a4339]">{article.excerpt}</p>
       <div className="mt-4 flex items-center gap-2 font-sans text-[13px] text-muted">
-        <time dateTime={article.date}>{formatDate(article.date)}</time>
+        <time dateTime={article.date}>{formatArticleDate(article.date)}</time>
         <span aria-hidden>·</span>
         <span>{article.readingTime}</span>
       </div>

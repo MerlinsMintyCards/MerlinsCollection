@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 
+/** Small uppercase pill label (mint background) for a category or tag. */
 export default function Badge({
   children,
   className = '',

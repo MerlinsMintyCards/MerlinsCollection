@@ -12,6 +12,12 @@ const variantClasses: Record<Variant, string> = {
   ghost: 'border-[1.5px] border-forest text-forest hover:bg-forest/[0.06]',
 }
 
+/**
+ * Brand call-to-action. Renders a Next.js `<Link>` when `href` is provided,
+ * otherwise a plain `<button>`. `variant` selects the look — solid forest
+ * (`primary`) or outlined (`ghost`) — and is mirrored to a `data-variant`
+ * attribute so tests and styles can target it.
+ */
 export default function Button({
   href,
   variant = 'primary',

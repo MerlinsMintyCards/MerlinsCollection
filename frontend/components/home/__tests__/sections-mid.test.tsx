@@ -1,12 +1,5 @@
 import { render, screen } from '@testing-library/react'
 
-vi.mock('next/image', () => ({
-  default: ({ src, alt, ...rest }: { src: string; alt: string }) => (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src={typeof src === 'string' ? src : ''} alt={alt} {...rest} />
-  ),
-}))
-
 import TrustStrip from '@/components/home/TrustStrip'
 import StoryTeaser from '@/components/home/StoryTeaser'
 import BuySellTrade from '@/components/home/BuySellTrade'

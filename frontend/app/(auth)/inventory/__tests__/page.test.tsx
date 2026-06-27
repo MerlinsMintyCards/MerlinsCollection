@@ -2,13 +2,6 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi } from 'vitest'
 
-vi.mock('next/image', () => ({
-  default: ({ src, alt }: { src: string; alt: string }) => (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src={typeof src === 'string' ? src : ''} alt={alt} />
-  ),
-}))
-
 vi.mock('@/lib/api', () => ({ apiFetch: vi.fn() }))
 
 import InventoryPage from '@/app/(auth)/inventory/page'

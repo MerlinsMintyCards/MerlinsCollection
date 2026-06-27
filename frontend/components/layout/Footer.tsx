@@ -78,7 +78,7 @@ export default function Footer() {
           ))}
         </div>
         <div className="flex flex-wrap gap-3.5 justify-between border-t border-white/10 mt-[34px] pt-[18px] text-[13px] text-[#8fae98]">
-          <span>© 2026 Merlin&apos;s Minty Cards LLC</span>
+          <span>© {new Date().getFullYear()} Merlin&apos;s Minty Cards LLC</span>
           <span>Privacy · Terms</span>
         </div>
       </Container>

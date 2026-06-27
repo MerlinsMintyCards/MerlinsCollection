@@ -3,15 +3,9 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import Container from '@/components/ui/Container'
 import Badge from '@/components/ui/Badge'
-import { getAllArticles, getArticleBySlug } from '@/lib/articles'
+import { getAllArticles, getArticleBySlug, formatArticleDate } from '@/lib/articles'
 
 type Props = { params: Promise<{ slug: string }> }
-
-const dateFormat = new Intl.DateTimeFormat('en-US', {
-  year: 'numeric',
-  month: 'long',
-  day: 'numeric',
-})
 
 export function generateStaticParams() {
   return getAllArticles().map((a) => ({ slug: a.slug }))
@@ -28,8 +22,7 @@ export default async function ArticlePage({ params }: Props) {
   const article = getArticleBySlug(slug)
   if (!article) notFound()
 
-  const parsed = new Date(article.date)
-  const date = Number.isNaN(parsed.getTime()) ? article.date : dateFormat.format(parsed)
+  const date = formatArticleDate(article.date, 'long')
 
   return (
     <Container className="py-[clamp(40px,7vw,76px)]">

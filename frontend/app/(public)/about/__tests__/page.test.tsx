@@ -1,12 +1,5 @@
 import { render, screen } from '@testing-library/react'
-import { describe, it, expect, vi } from 'vitest'
-
-vi.mock('next/image', () => ({
-  default: ({ src, alt }: { src: string; alt: string }) => (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src={typeof src === 'string' ? src : ''} alt={alt} />
-  ),
-}))
+import { describe, it, expect } from 'vitest'
 
 import AboutPage from '@/app/(public)/about/page'
 

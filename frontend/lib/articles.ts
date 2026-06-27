@@ -60,3 +60,25 @@ export function getAllArticles(): Article[] {
 export function getArticleBySlug(slug: string): Article | undefined {
   return articles.find((a) => a.slug === slug)
 }
+
+// One formatter per month style. timeZone: 'UTC' is essential: article dates are
+// date-only strings (parsed as UTC midnight), so formatting in UTC keeps the
+// displayed calendar date identical for every viewer. Without it, negative-offset
+// timezones (e.g. US Pacific, where the business is based) render the prior day.
+const dateFormatters: Record<'short' | 'long', Intl.DateTimeFormat> = {
+  short: new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' }),
+  long: new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' }),
+}
+
+/**
+ * Format an article's date-only ISO string (e.g. `"2026-05-12"`) for display.
+ * Returns the original string unchanged when it can't be parsed.
+ *
+ * @param iso   A date-only ISO string.
+ * @param style `'short'` → `"May 12, 2026"` (default); `'long'` → `"May 12, 2026"`
+ *              with the full month name (e.g. `"September 20, 2026"`).
+ */
+export function formatArticleDate(iso: string, style: 'short' | 'long' = 'short'): string {
+  const parsed = new Date(iso)
+  return Number.isNaN(parsed.getTime()) ? iso : dateFormatters[style].format(parsed)
+}

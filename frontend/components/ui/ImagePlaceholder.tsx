@@ -1,3 +1,8 @@
+/**
+ * Gradient stand-in for imagery that isn't wired up yet. Exposed to assistive
+ * tech as an image via `role="img"` + `aria-label`; the visible label text is
+ * `aria-hidden` so it isn't announced twice.
+ */
 export default function ImagePlaceholder({
   label,
   className = '',
