@@ -1,0 +1,32 @@
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { describe, it, expect, vi } from 'vitest'
+
+vi.mock('next/image', () => ({
+  default: ({ src, alt }: { src: string; alt: string }) => (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={typeof src === 'string' ? src : ''} alt={alt} />
+  ),
+}))
+
+vi.mock('@/lib/api', () => ({ apiFetch: vi.fn() }))
+
+import InventoryPage from '@/app/(auth)/inventory/page'
+
+describe('Inventory page', () => {
+  it('renders the inventory search heading', () => {
+    render(<InventoryPage />)
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/inventory/i)
+  })
+
+  it('starts in filter mode with the search controls visible', () => {
+    render(<InventoryPage />)
+    expect(screen.getByRole('button', { name: /search/i })).toBeInTheDocument()
+  })
+
+  it('switches to chat mode when the chat tab is selected', async () => {
+    render(<InventoryPage />)
+    await userEvent.click(screen.getByRole('tab', { name: /chat/i }))
+    expect(screen.getByRole('button', { name: /send/i })).toBeInTheDocument()
+  })
+})

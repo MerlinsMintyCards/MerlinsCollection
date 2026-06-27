@@ -25,6 +25,12 @@ const config: Config = {
         ink: '#241f1b',
         muted: '#6f6457',
         line: '#e6ddcc',
+        // Inventory: a dark version of the brand green (used only on /inventory)
+        pine: {
+          950: '#06150b', 900: '#0a2011', 850: '#0e2a17', 800: '#123420',
+          700: '#1b4a2c', 600: '#27623c', 500: '#357c4d', 400: '#6fb085',
+          300: '#8fc79f', 200: '#bfe3c9', 100: '#e8f5ec',
+        },
       },
       fontFamily: {
         serif: ['var(--font-fraunces)', 'Georgia', 'serif'],

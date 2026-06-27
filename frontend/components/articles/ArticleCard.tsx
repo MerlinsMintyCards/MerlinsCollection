@@ -1,4 +1,35 @@
-// Preview card for an article — implemented via TDD
-export default function ArticleCard() {
-  return null
+import Link from 'next/link'
+import Badge from '@/components/ui/Badge'
+import type { Article } from '@/lib/articles'
+
+const dateFormat = new Intl.DateTimeFormat('en-US', {
+  year: 'numeric',
+  month: 'short',
+  day: 'numeric',
+})
+
+function formatDate(iso: string): string {
+  const parsed = new Date(iso)
+  return Number.isNaN(parsed.getTime()) ? iso : dateFormat.format(parsed)
+}
+
+/** Preview card for an article, linking to its full page. */
+export default function ArticleCard({ article }: { article: Article }) {
+  return (
+    <Link
+      href={`/articles/${article.slug}`}
+      className="group flex h-full flex-col rounded-2xl border border-line bg-cream p-6 hover-lift hover:border-mint hover:shadow-card"
+    >
+      <Badge>{article.category}</Badge>
+      <h3 className="mt-3 font-serif text-[21px] font-semibold leading-snug text-forest-deep group-hover:text-forest">
+        {article.title}
+      </h3>
+      <p className="mt-2 flex-1 text-[15px] text-[#4a4339]">{article.excerpt}</p>
+      <div className="mt-4 flex items-center gap-2 font-sans text-[13px] text-muted">
+        <time dateTime={article.date}>{formatDate(article.date)}</time>
+        <span aria-hidden>·</span>
+        <span>{article.readingTime}</span>
+      </div>
+    </Link>
+  )
 }

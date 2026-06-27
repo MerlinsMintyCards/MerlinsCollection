@@ -141,6 +141,36 @@ body {
   }
 }
 
+/* ---- Inventory "dark vault": a dark version of the brand green ---- */
+.vault-scope {
+  /* Faint engraved grid + minty top glow, over the deep forest base. */
+  background-color: #06150b;
+  background-image:
+    radial-gradient(120% 80% at 50% -10%, rgba(169, 224, 179, 0.1), transparent 60%),
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 100% 100%, 44px 44px, 44px 44px;
+}
+.vault-panel {
+  background: linear-gradient(180deg, #123420 0%, #0a2011 100%);
+  border: 1px solid #1b4a2c;
+}
+/* Mint focus ring for the dark inputs/controls (keyboard-visible). */
+.vault-field {
+  background: #0a2011;
+  border: 1px solid #1b4a2c;
+  color: #e8f5ec;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.vault-field::placeholder {
+  color: #6fb085;
+}
+.vault-field:focus {
+  outline: none;
+  border-color: #a9e0b3;
+  box-shadow: 0 0 0 3px rgba(169, 224, 179, 0.22);
+}
+
 /* ---- Reduced motion: neutralize the new motion + any utility transitions ---- */
 @media (prefers-reduced-motion: reduce) {
   .reveal {
