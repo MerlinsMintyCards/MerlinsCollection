@@ -1,3 +1,25 @@
+"""Single-table DynamoDB repository for catalog cards, inventory, and prices.
+
+Everything lives in one table keyed by ``PK``/``SK`` plus one GSI
+(``GSI1PK``/``GSI1SK``); every item carries an ``entity`` tag. This module is the
+*only* place that knows the key formats — callers work in domain models. Key
+layout (see ``backend/README.md`` for the access patterns):
+
+====================  ====================  ============================================
+entity                PK                    SK
+====================  ====================  ============================================
+catalog_card          ``CARD#<id>``         ``META``
+inventory_item (raw)  ``INV#<shard>``       ``CARD#<id>#RAW#<finish>#<condition>``
+inventory_item (grd)  ``INV#<shard>``       ``CARD#<id>#GRADED#<company>#<grade>#<cert>``
+graded_price          ``CARD#<id>``         ``GRADEDPRICE#<company>#<grade>``
+price_point           ``CARD#<id>``         ``PRICE#RAW#<finish>#<date>`` / ``PRICE#GRADED#...``
+====================  ====================  ============================================
+
+Inventory is sharded across ``INVENTORY_SHARD_COUNT`` partitions (by a stable
+hash of ``card_id``) so a single "all inventory" partition never goes hot;
+``list_inventory`` fans out across every shard.
+"""
+
 from __future__ import annotations
 
 import hashlib
@@ -38,6 +60,13 @@ def _serialize(value):
 
 
 class InventoryRepository:
+    """Data-access layer over the single DynamoDB table.
+
+    Reads/writes domain models (``CatalogCard``, ``InventoryItem``,
+    ``PricePoint``) and hides the key schema. ``endpoint_url`` is for local /
+    moto testing; production points at real DynamoDB via the default endpoint.
+    """
+
     def __init__(self, table_name, *, endpoint_url=None, region_name="us-east-1"):
         self._resource = boto3.resource(
             "dynamodb", endpoint_url=endpoint_url, region_name=region_name
@@ -47,6 +76,7 @@ class InventoryRepository:
 
     # ---- table management (tests / local dev; prod table is provisioned by infra) ----
     def create_table(self):
+        """Create the table + GSI1 and block until it's active (tests/local dev)."""
         self._resource.create_table(
             TableName=self._table_name,
             BillingMode="PAY_PER_REQUEST",
@@ -75,6 +105,7 @@ class InventoryRepository:
 
     # ---- internal helpers ----
     def _query_all(self, **kwargs):
+        """Run a query, following ``LastEvaluatedKey`` until all pages are read."""
         items = []
         while True:
             resp = self._table.query(**kwargs)
@@ -97,15 +128,18 @@ class InventoryRepository:
 
     # ---- catalog ----
     def get_catalog_card(self, card_id):
+        """Point-read one catalog card by id, or ``None`` if it isn't synced."""
         item = self._table.get_item(Key={"PK": f"CARD#{card_id}", "SK": "META"}).get("Item")
         return CatalogCard.model_validate(item) if item else None
 
     def batch_upsert_catalog_cards(self, cards):
+        """Insert/overwrite catalog cards in bulk (used by the daily sync)."""
         with self._table.batch_writer() as batch:  # auto-chunks to 25 + retries unprocessed
             for card in cards:
                 batch.put_item(Item=self._catalog_item(card))
 
     def list_cards_by_set(self, set_id):
+        """Return every catalog card in a set via the GSI1 ``SET#`` partition."""
         items = self._query_all(
             IndexName="GSI1",
             KeyConditionExpression=Key("GSI1PK").eq(f"SET#{set_id}")
@@ -115,6 +149,7 @@ class InventoryRepository:
 
     # ---- inventory ----
     def _inventory_keys(self, item) -> tuple[str, str, str]:
+        """Compose ``(PK, SK, GSI1SK)`` for an inventory item from its identity."""
         pk = f"INV#{_bucket(item.card_id)}"
         if item.kind == "raw":
             sk = f"CARD#{item.card_id}#RAW#{item.finish}#{item.condition}"
@@ -126,6 +161,7 @@ class InventoryRepository:
         return pk, sk, gsi1sk
 
     def put_inventory_item(self, item):
+        """Insert or overwrite a single inventory item (keyed by its identity)."""
         pk, sk, gsi1sk = self._inventory_keys(item)
         body = _serialize(item.model_dump(mode="python"))
         self._table.put_item(
@@ -137,21 +173,29 @@ class InventoryRepository:
         )
 
     def get_inventory_item(self, item):
+        """Fetch the stored copy of an item by identity, or ``None`` if absent.
+
+        Takes a model so the caller can round-trip an item it already holds; only
+        the key fields are used to locate it.
+        """
         pk, sk, _ = self._inventory_keys(item)
         found = self._table.get_item(Key={"PK": pk, "SK": sk}).get("Item")
         return InventoryItemAdapter.validate_python(found) if found else None
 
     def delete_inventory_item(self, item):
+        """Delete an inventory item identified by its key fields."""
         pk, sk, _ = self._inventory_keys(item)
         self._table.delete_item(Key={"PK": pk, "SK": sk})
 
     def list_inventory(self):
+        """Return the entire inventory, fanning out across all shard partitions."""
         items = []
         for bucket in range(INVENTORY_SHARD_COUNT):
             items.extend(self._query_all(KeyConditionExpression=Key("PK").eq(f"INV#{bucket}")))
         return [InventoryItemAdapter.validate_python(i) for i in items]
 
     def list_inventory_for_card(self, card_id):
+        """Return every inventory item for one card via the GSI1 ``CARD#`` partition."""
         items = self._query_all(
             IndexName="GSI1",
             KeyConditionExpression=Key("GSI1PK").eq(f"CARD#{card_id}")
@@ -161,6 +205,11 @@ class InventoryRepository:
 
     # ---- graded current price (separate item; catalog put never touches it) ----
     def set_graded_market_value(self, card_id, company, grade, value: Decimal):
+        """Record the current manual market value for a graded slab.
+
+        Stored under its own ``GRADEDPRICE#`` item so a catalog re-sync (which
+        overwrites the ``META`` item) never clobbers a hand-entered graded price.
+        """
         self._table.put_item(
             Item={
                 "PK": f"CARD#{card_id}",
@@ -176,6 +225,7 @@ class InventoryRepository:
         )
 
     def get_graded_market_value(self, card_id, company, grade):
+        """Return the stored graded market value, or ``None`` if none is set."""
         item = self._table.get_item(
             Key={"PK": f"CARD#{card_id}", "SK": f"GRADEDPRICE#{company}#{_grade_key(grade)}"}
         ).get("Item")
@@ -191,12 +241,20 @@ class InventoryRepository:
         return {"PK": f"CARD#{p.card_id}", "SK": sk, "entity": "price_point", **body}
 
     def append_price_points(self, points):
+        """Bulk-append daily price-history points (one item per point)."""
         with self._table.batch_writer() as batch:
             for p in points:
                 batch.put_item(Item=self._price_point_item(p))
 
     def get_price_history(self, card_id, *, finish=None, company=None,
                           grade=None, start=None, end=None):
+        """Return price-history points for a card, narrowed by finish or grade.
+
+        Pass ``company`` (+ ``grade``) for graded history or ``finish`` for raw;
+        ``start``/``end`` bound the date range. For a *graded* range query
+        ``grade`` is required — without it the ``SK`` prefix spans grades and the
+        ``between`` bounds won't line up with the grade-segmented keys.
+        """
         if company is not None:
             if grade is not None:
                 prefix = f"PRICE#GRADED#{company}#{_grade_key(grade)}#"
@@ -206,8 +264,6 @@ class InventoryRepository:
             prefix = f"PRICE#RAW#{finish}#"
         else:
             prefix = "PRICE#RAW#"
-        # Note: for a GRADED range query the `grade` argument is required (otherwise the
-        # prefix spans grades and the between bounds may not behave as expected).
         pk = Key("PK").eq(f"CARD#{card_id}")
         if start is not None or end is not None:
             lo = (start or date.min).isoformat()

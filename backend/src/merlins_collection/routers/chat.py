@@ -1,3 +1,10 @@
+"""``/chat`` router — the AI chat mode of the inventory tool.
+
+Thin HTTP layer over ``BedrockChatService``: authenticate the caller, run the
+message through Bedrock, and translate the service's typed errors into HTTP
+status codes. All real logic lives in the service.
+"""
+
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from merlins_collection.dependencies import get_bedrock_service, get_current_user
@@ -20,6 +27,11 @@ def chat(
     _user: AuthenticatedUser = Depends(get_current_user),
     service: BedrockChatService = Depends(get_bedrock_service),
 ) -> ChatResponse:
+    """Answer a chat message about the inventory; requires a valid bearer token.
+
+    Maps service failures to HTTP: throttling → 429, tool-loop limit → 503,
+    content filtering → 422, any other Bedrock error → 502.
+    """
     try:
         reply = service.chat(request.message)
     except BedrockThrottledError as exc:

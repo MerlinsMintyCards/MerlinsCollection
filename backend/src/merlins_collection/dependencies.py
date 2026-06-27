@@ -8,6 +8,7 @@ token (401 on missing/invalid, 503 when signing keys can't be fetched), and
 
 from __future__ import annotations
 
+import json
 from functools import lru_cache
 
 import boto3
@@ -31,14 +32,20 @@ _bearer_scheme = HTTPBearer(auto_error=False)
 
 @lru_cache
 def get_repo() -> InventoryRepository:
+    """Provide the inventory repository as a cached singleton."""
     return InventoryRepository(settings.dynamodb_table_name, region_name=settings.aws_region)
 
 
 def get_bedrock_service() -> BedrockChatService:
+    """Provide a Bedrock chat service with a (temporary) stub tool executor.
+
+    Not cached: the MCP-backed tool executor isn't wired up yet, so this is
+    expected to be rebuilt once ``mcp_client`` lands. Until then the stub makes
+    every tool call return a "not configured" message instead of real data.
+    """
     client = boto3.client("bedrock-runtime", region_name=settings.aws_region)
-    # MCP tool executor is a stub until mcp_client is implemented
+
     def _stub_executor(tool_name: str, tool_input: dict) -> str:
-        import json
         return json.dumps({"error": "MCP tool executor not yet configured", "tool": tool_name})
 
     return BedrockChatService(
@@ -50,6 +57,7 @@ def get_bedrock_service() -> BedrockChatService:
 
 @lru_cache
 def get_verifier() -> CognitoJwtVerifier:
+    """Provide the Cognito JWT verifier as a cached singleton (keeps the JWKS cache warm)."""
     return CognitoJwtVerifier(
         region=settings.aws_region,
         user_pool_id=settings.cognito_user_pool_id,

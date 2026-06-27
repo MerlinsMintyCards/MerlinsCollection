@@ -37,6 +37,14 @@ class JwksUnavailableError(Exception):
 
 
 class CognitoJwtVerifier:
+    """Validates Cognito access tokens and maps them to ``AuthenticatedUser``.
+
+    Construct once per pool/client and reuse it: the instance owns the JWKS
+    cache. ``jwks``/``http_client`` are injectable for tests; ``admin_group``,
+    ``leeway``, and ``min_refresh_interval`` tune role mapping, clock-skew
+    tolerance, and the key-refresh cooldown respectively.
+    """
+
     def __init__(
         self,
         region: str,
@@ -112,6 +120,12 @@ class CognitoJwtVerifier:
 
     # -- verification -----------------------------------------------------
     def verify(self, token: str) -> AuthenticatedUser:
+        """Validate a Cognito access token and return the caller's identity.
+
+        Raises ``InvalidTokenError`` if the token is malformed or fails any
+        signature/claim check, or ``JwksUnavailableError`` if the signing keys
+        can't be fetched (a transient infrastructure fault, not a bad token).
+        """
         try:
             header = jwt.get_unverified_header(token)
         except JWTError as exc:

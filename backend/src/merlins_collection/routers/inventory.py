@@ -1,3 +1,11 @@
+"""``/inventory`` router — the filter mode of the inventory search tool.
+
+Loads the full inventory and applies the requested filters in-process (the
+collection is small enough that this is simpler than per-filter queries).
+Filters are applied cheapest-first: in-item fields (condition, price) before
+filters that require a catalog lookup (set, name, rarity).
+"""
+
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -26,6 +34,12 @@ def search_inventory(
     _user: AuthenticatedUser = Depends(get_current_user),
     repo: InventoryRepository = Depends(get_repo),
 ) -> InventorySearchResult:
+    """Return inventory matching the given filters (all optional, AND-combined).
+
+    ``condition`` selects raw cards only (graded items are excluded when it's
+    set). An inverted price range (``min_price > max_price``) is rejected with
+    422. ``cost_basis`` is stripped from the response by ``response_model_exclude``.
+    """
     if min_price is not None and max_price is not None and min_price > max_price:
         raise HTTPException(
             status_code=422,

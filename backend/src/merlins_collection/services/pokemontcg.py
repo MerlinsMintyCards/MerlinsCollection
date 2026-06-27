@@ -1,3 +1,11 @@
+"""Read-only client for the pokemontcg.io v2 API (card metadata + prices).
+
+``to_catalog_card`` maps a raw API card into our ``CatalogCard`` domain model
+(prices come from the nested TCGplayer block). ``PokemonTcgClient`` wraps the
+HTTP calls used by the daily sync — paging through the full card list and
+fetching single cards — with retry/backoff on transient failures.
+"""
+
 from __future__ import annotations
 
 import time
@@ -17,6 +25,11 @@ def _dec(value) -> Decimal | None:
 
 
 def to_catalog_card(raw: dict, *, synced_at: datetime | None = None) -> CatalogCard:
+    """Map a raw pokemontcg.io card dict into a ``CatalogCard``.
+
+    Tolerates missing optional blocks (prices, images, set) by defaulting them;
+    ``id`` and ``name`` are the only hard requirements.
+    """
     synced_at = synced_at or datetime.now(timezone.utc)
     tcg_prices = ((raw.get("tcgplayer") or {}).get("prices")) or {}
     prices = {
@@ -45,12 +58,21 @@ def to_catalog_card(raw: dict, *, synced_at: datetime | None = None) -> CatalogC
 
 
 class PokemonTcgError(RuntimeError):
+    """A pokemontcg.io request failed; ``status_code`` is the last HTTP status seen."""
+
     def __init__(self, message, *, status_code=None):
         super().__init__(message)
         self.status_code = status_code
 
 
 class PokemonTcgClient:
+    """HTTP client for pokemontcg.io v2.
+
+    ``api_key`` is sent as ``X-Api-Key`` when provided (raises rate limits). The
+    ``client`` is injectable for tests; ``page_size``/``max_retries``/
+    ``backoff_base`` tune paging and the retry schedule.
+    """
+
     BASE_URL = "https://api.pokemontcg.io/v2"
 
     def __init__(self, api_key="", *, client=None, page_size=250, max_retries=3, backoff_base=0.5):
@@ -61,6 +83,7 @@ class PokemonTcgClient:
         self._backoff_base = backoff_base
 
     def _get(self, path, params=None):
+        """GET ``path`` with retry on 429/5xx; other 4xx raise immediately."""
         last_exc = None
         for attempt in range(self._max_retries):
             try:
@@ -83,6 +106,7 @@ class PokemonTcgClient:
         ) from last_exc
 
     def iter_all_cards(self) -> Iterator[dict]:
+        """Yield every card across all pages, stopping at the first short page."""
         page = 1
         while True:
             data = self._get("/cards", params={"page": page, "pageSize": self._page_size})
@@ -95,6 +119,7 @@ class PokemonTcgClient:
             page += 1
 
     def get_card(self, card_id) -> dict | None:
+        """Fetch one card by id; return ``None`` on 404, raise on other errors."""
         try:
             data = self._get(f"/cards/{card_id}")
         except PokemonTcgError as exc:

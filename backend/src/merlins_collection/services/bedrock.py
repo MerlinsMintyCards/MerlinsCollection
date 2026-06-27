@@ -1,3 +1,16 @@
+"""Bedrock-backed chat for inventory questions (the ``/chat`` "AI" mode).
+
+Drives the Bedrock **Converse** API in a bounded tool-use loop: send the user
+message with the inventory tool schemas, and whenever the model asks to use a
+tool, run it via the injected ``tool_executor`` and feed the result back. The
+loop stops on ``end_turn`` (return the text) or after ``_MAX_TOOL_TURNS`` rounds
+(raise ``BedrockLoopError``). All failure modes surface as typed
+``BedrockServiceError`` subclasses so the router can map them to HTTP statuses.
+
+The tool schemas here mirror the MCP server definitions; the actual tool
+execution is delegated, keeping this class free of MCP/transport details.
+"""
+
 from __future__ import annotations
 
 from typing import Callable
@@ -103,6 +116,14 @@ class BedrockContentFilteredError(BedrockServiceError):
 
 
 class BedrockChatService:
+    """Runs one chat turn through Bedrock Converse with the inventory tools.
+
+    ``client`` is a boto3 ``bedrock-runtime`` client; ``tool_executor`` is a
+    ``(tool_name, tool_input) -> str`` callable that actually runs an MCP tool
+    and returns its result as text. Both are injected so the loop can be tested
+    without AWS or a live MCP server.
+    """
+
     def __init__(
         self,
         client,
@@ -114,6 +135,12 @@ class BedrockChatService:
         self._tool_executor = tool_executor
 
     def chat(self, message: str) -> str:
+        """Answer a single user message, running tools until the model is done.
+
+        Returns the model's final text. Raises a ``BedrockServiceError`` subclass
+        on throttling, content filtering, an unexpected stop reason, or if the
+        tool-use loop exceeds ``_MAX_TOOL_TURNS`` without finishing.
+        """
         messages: list[dict] = [{"role": "user", "content": [{"text": message}]}]
 
         for _ in range(_MAX_TOOL_TURNS + 1):

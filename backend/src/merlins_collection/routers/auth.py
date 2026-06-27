@@ -1,9 +1,14 @@
+"""``/auth`` router — identity endpoints backed by Cognito JWT verification.
+
+Token validation itself lives in ``services/cognito.py`` and is applied via the
+``get_current_user`` dependency; these routes just expose the verified identity.
+"""
+
 from fastapi import APIRouter, Depends
 
 from merlins_collection.dependencies import get_current_user
 from merlins_collection.models.auth import AuthenticatedUser
 
-# Cognito JWT validation and session endpoints — implemented via TDD
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
