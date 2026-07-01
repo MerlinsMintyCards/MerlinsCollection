@@ -169,6 +169,17 @@ class BedrockChatService:
                 )
 
             if stop_reason == "tool_use":
+                tool_turns = sum(
+                    1
+                    for m in messages
+                    if m.get("role") == "assistant"
+                    and any("toolUse" in b for b in m.get("content", []))
+                )
+                if tool_turns > _MAX_TOOL_TURNS:
+                    raise BedrockLoopError(
+                        f"Bedrock tool call loop exceeded {_MAX_TOOL_TURNS} turns without end_turn"
+                    )
+
                 tool_results = []
                 for block in assistant_message["content"]:
                     if "toolUse" in block:
