@@ -1,7 +1,18 @@
+"""Application settings, loaded from environment variables or a ``.env`` file.
+
+A single module-level ``settings`` instance is imported across the app. Field
+names map to upper-case env vars (``aws_region`` ← ``AWS_REGION``); unknown env
+vars are ignored. Defaults are dev-friendly — production supplies real values
+via the environment, and AWS credentials normally come from the ambient
+credential chain rather than the (empty-by-default) fields here.
+"""
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    """Typed configuration for AWS, Cognito, DynamoDB, Bedrock, and integrations."""
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     aws_region: str = "us-east-1"
@@ -12,6 +23,7 @@ class Settings(BaseSettings):
     dynamodb_table_name: str = "merlins-cards"
     bedrock_model_id: str = "anthropic.claude-3-5-sonnet-20241022-v2:0"
     mcp_server_path: str = "../mcp-server/dist/index.js"
+    pokemontcg_api_key: str = ""
 
 
 settings = Settings()
