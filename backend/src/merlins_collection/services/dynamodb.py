@@ -234,8 +234,12 @@ class InventoryRepository:
     # ---- price history ----
     def _price_point_item(self, p: PricePoint) -> dict:
         if p.kind == "raw":
+            if not p.finish:
+                raise ValueError("raw price points require 'finish'")
             sk = f"PRICE#RAW#{p.finish}#{p.date.isoformat()}"
         else:
+            if not p.company or p.grade is None:
+                raise ValueError("graded price points require 'company' and 'grade'")
             sk = f"PRICE#GRADED#{p.company}#{_grade_key(p.grade)}#{p.date.isoformat()}"
         body = _serialize(p.model_dump(mode="python"))
         return {"PK": f"CARD#{p.card_id}", "SK": sk, "entity": "price_point", **body}
