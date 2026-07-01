@@ -134,7 +134,7 @@ export default function AboutPage() {
               <a
                 href="https://instagram.com/merlinsmintycards"
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 className="rounded-full border-[1.5px] border-mint/60 px-6 py-3 font-semibold text-mint transition-colors hover:bg-white/10"
               >
                 @merlinsmintycards
