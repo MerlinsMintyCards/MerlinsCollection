@@ -34,7 +34,7 @@ function FooterLink({ item }: { item: Item }) {
   const className = 'block text-[14px] text-[#bcd6c4] py-1 hover:text-mint'
   if (/^https?:/.test(item.href)) {
     return (
-      <a href={item.href} target="_blank" rel="noreferrer" className={className}>
+      <a href={item.href} target="_blank" rel="noopener noreferrer" className={className}>
         {item.label}
       </a>
     )
