@@ -23,12 +23,24 @@ export default function InventoryWorkspace() {
 
       <div
         role="tabpanel"
-        id={`panel-${mode}`}
-        aria-labelledby={`tab-${mode}`}
+        id="panel-filter"
+        aria-labelledby="tab-filter"
+        hidden={mode !== 'filter'}
         tabIndex={0}
         className="focus:outline-none"
       >
-        {mode === 'filter' ? <FilterPanel /> : <ChatPanel />}
+        <FilterPanel />
+      </div>
+
+      <div
+        role="tabpanel"
+        id="panel-chat"
+        aria-labelledby="tab-chat"
+        hidden={mode !== 'chat'}
+        tabIndex={0}
+        className="focus:outline-none"
+      >
+        <ChatPanel />
       </div>
     </div>
   )
