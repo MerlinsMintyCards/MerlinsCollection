@@ -1,5 +1,5 @@
 'use client'
-import { useCallback, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import type { MouseEvent } from 'react'
 
 const MAX_TILT = 12 // degrees
@@ -17,6 +17,11 @@ export function useCardTilt(withPerspective = true) {
   const ref = useRef<HTMLDivElement>(null)
   const rafRef = useRef(0)
 
+  useEffect(() => {
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current)
+    }
+  }, [])
   const onMouseMove = useCallback(
     (e: MouseEvent) => {
       if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
